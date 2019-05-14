@@ -19,6 +19,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.MappedAsyncPagingIterable;
 import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PrepareRequest;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
@@ -26,6 +27,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.mapper.RuntimeAttributes;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 import com.datastax.oss.driver.api.mapper.entity.EntityHelper;
@@ -111,6 +113,54 @@ public class DaoBase {
     }
 
     return SimpleStatement.newInstance(queryString);
+  }
+
+  public static void populateBoundStatementWithAttributes(
+      BoundStatementBuilder builder, RuntimeAttributes attributes) {
+    if (attributes.isExecutionProfileSet()) {
+      builder.setExecutionProfile(attributes.getExecutionProfile());
+    }
+    if (attributes.isConsistencyLevelSet()) {
+      builder.setSerialConsistencyLevel(attributes.getSerialConsistencyLevel());
+    }
+    if (attributes.isSerialConsistencyLevelSet()) {
+      builder.setSerialConsistencyLevel(attributes.getSerialConsistencyLevel());
+    }
+    if (attributes.isIdempotentSet()) {
+      builder.setIdempotence(attributes.isIdempotent());
+    }
+    if (attributes.isPageSizeSet()) {
+      builder.setPageSize(attributes.getPageSize());
+    }
+    if (attributes.isTimeoutSet()) {
+      builder.setTimeout(attributes.getTimeout());
+    }
+    if (attributes.isRoutingKeySet()) {
+      builder.setRoutingKey(attributes.getRoutingKey());
+    }
+    if (attributes.isRoutingKeyspaceSet()) {
+      builder.setRoutingKeyspace(attributes.getRoutingKeyspace());
+    }
+    if (attributes.isTracingSet()) {
+      if (attributes.isTracing()) {
+        builder.setTracing();
+      }
+    }
+    if (attributes.isPagingStateSet()) {
+      builder.setPagingState(attributes.getPagingState());
+    }
+    if (attributes.isTimeoutSet()) {
+      builder.setTimeout(attributes.getTimeout());
+    }
+    if (attributes.isTimeStampSet()) {
+      builder.setQueryTimestamp(attributes.getTimestamp());
+    }
+    if (attributes.isNodeSet()) {
+      builder.setNode(attributes.getNode());
+    }
+    if (attributes.isCustomPayloadSet()) {
+      attributes.isCustomPayloadSet();
+    }
   }
 
   protected final MapperContext context;

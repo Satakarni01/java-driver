@@ -25,6 +25,7 @@ import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKi
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.mapper.RuntimeAttributes;
 import com.datastax.oss.driver.api.mapper.annotations.Insert;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.datastax.oss.driver.internal.mapper.processor.ProcessorContext;
@@ -48,6 +49,8 @@ public class DaoInsertMethodGenerator extends DaoMethodGenerator {
           FUTURE_OF_ENTITY,
           OPTIONAL_ENTITY,
           FUTURE_OF_OPTIONAL_ENTITY);
+
+  private static final String RUNTIME_ATTRIBUTES_NAME = RuntimeAttributes.class.getName();
 
   public DaoInsertMethodGenerator(
       ExecutableElement methodElement,
@@ -83,7 +86,12 @@ public class DaoInsertMethodGenerator extends DaoMethodGenerator {
               Insert.class.getSimpleName());
       return Optional.empty();
     }
-
+    VariableElement runtTimeAttributeParam = null;
+    int lastParamIndex = methodElement.getParameters().size() - 1;
+    VariableElement potRunTimeParam = methodElement.getParameters().get(lastParamIndex);
+    if (potRunTimeParam.asType().toString().equals(RUNTIME_ATTRIBUTES_NAME)) {
+      runtTimeAttributeParam = potRunTimeParam;
+    }
     // Validate the return type:
     ReturnType returnType = parseReturnType(methodElement.getReturnType());
     if (!SUPPORTED_RETURN_TYPES.contains(returnType.kind)) {
@@ -125,6 +133,14 @@ public class DaoInsertMethodGenerator extends DaoMethodGenerator {
         statementName);
 
     List<? extends VariableElement> parameters = methodElement.getParameters();
+    if (runtTimeAttributeParam != null) {
+      parameters = parameters.subList(0, lastParamIndex);
+      if (runtTimeAttributeParam != null) {
+        insertBuilder.addStatement(
+            "DaoBase.populateBoundStatementWithAttributes(boundStatementBuilder,$L)",
+            runtTimeAttributeParam.getSimpleName().toString());
+      }
+    }
     String entityParameterName = parameters.get(0).getSimpleName().toString();
     insertBuilder.addStatement(
         "$L.set($L, boundStatementBuilder)", helperFieldName, entityParameterName);
@@ -134,7 +150,6 @@ public class DaoInsertMethodGenerator extends DaoMethodGenerator {
       GeneratedCodePatterns.bindParameters(
           parameters.subList(1, parameters.size()), insertBuilder, enclosingClass, context);
     }
-
     insertBuilder
         .addCode("\n")
         .addStatement("$T boundStatement = boundStatementBuilder.build()", BoundStatement.class);

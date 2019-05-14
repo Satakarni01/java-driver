@@ -35,6 +35,7 @@ import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKi
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.mapper.RuntimeAttributes;
 import com.datastax.oss.driver.api.mapper.annotations.Query;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.datastax.oss.driver.internal.mapper.DaoBase;
@@ -43,9 +44,11 @@ import com.datastax.oss.driver.internal.mapper.processor.util.generation.Generat
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Optional;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 
 public class DaoQueryMethodGenerator extends DaoMethodGenerator {
 
@@ -67,6 +70,8 @@ public class DaoQueryMethodGenerator extends DaoMethodGenerator {
           FUTURE_OF_ASYNC_RESULT_SET,
           PAGING_ITERABLE,
           FUTURE_OF_ASYNC_PAGING_ITERABLE);
+
+  private static final String RUNTIME_ATTRIBUTES_NAME = RuntimeAttributes.class.getName();
 
   private final String queryString;
 
@@ -151,14 +156,31 @@ public class DaoQueryMethodGenerator extends DaoMethodGenerator {
                   Query.class.getSimpleName()))
           .endControlFlow();
     }
+    List<? extends VariableElement> parameters = methodElement.getParameters();
+    VariableElement runtTimeAttributeParam = null;
+    if (parameters.size() > 0) {
+      int lastParamIndex = methodElement.getParameters().size() - 1;
+      VariableElement potRunTimeParam = methodElement.getParameters().get(lastParamIndex);
+      if (potRunTimeParam.asType().toString().equals(RUNTIME_ATTRIBUTES_NAME)) {
+        runtTimeAttributeParam = potRunTimeParam;
+        parameters = parameters.subList(0, lastParamIndex);
+      }
+    }
 
     queryBuilder.addStatement(
         "$T boundStatementBuilder = $L.boundStatementBuilder()",
         BoundStatementBuilder.class,
         statementName);
 
-    GeneratedCodePatterns.bindParameters(
-        methodElement.getParameters(), queryBuilder, enclosingClass, context);
+    if (runtTimeAttributeParam != null) {
+      if (runtTimeAttributeParam != null) {
+        queryBuilder.addStatement(
+            "DaoBase.populateBoundStatementWithAttributes(boundStatementBuilder,$L)",
+            runtTimeAttributeParam.getSimpleName().toString());
+      }
+    }
+
+    GeneratedCodePatterns.bindParameters(parameters, queryBuilder, enclosingClass, context);
 
     queryBuilder
         .addCode("\n")

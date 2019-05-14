@@ -27,6 +27,7 @@ import com.datastax.oss.driver.api.core.PagingIterable;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.mapper.RuntimeAttributes;
 import com.datastax.oss.driver.api.mapper.annotations.Entity;
 import com.datastax.oss.driver.api.mapper.annotations.Select;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
@@ -57,6 +58,8 @@ public class DaoSelectMethodGenerator extends DaoMethodGenerator {
           FUTURE_OF_OPTIONAL_ENTITY,
           PAGING_ITERABLE,
           FUTURE_OF_ASYNC_PAGING_ITERABLE);
+
+  private static final String RUNTIME_ATTRIBUTES_NAME = RuntimeAttributes.class.getName();
 
   public DaoSelectMethodGenerator(
       ExecutableElement methodElement,
@@ -93,6 +96,13 @@ public class DaoSelectMethodGenerator extends DaoMethodGenerator {
     // - if there is a custom clause, they are free-form  (they'll be used as bind variables)
     // - otherwise, they must be an exact match for the entity's primary key
     List<? extends VariableElement> parameters = methodElement.getParameters();
+    VariableElement runtTimeAttributeParam = null;
+    int lastParamIndex = methodElement.getParameters().size() - 1;
+    VariableElement potRunTimeParam = methodElement.getParameters().get(lastParamIndex);
+    if (potRunTimeParam.asType().toString().equals(RUNTIME_ATTRIBUTES_NAME)) {
+      runtTimeAttributeParam = potRunTimeParam;
+      parameters = parameters.subList(0, lastParamIndex);
+    }
     Select selectAnnotation = methodElement.getAnnotation(Select.class);
     assert selectAnnotation != null; // otherwise we wouldn't have gotten into this class
     String customClause = selectAnnotation.customWhereClause();
@@ -137,6 +147,13 @@ public class DaoSelectMethodGenerator extends DaoMethodGenerator {
         "$T boundStatementBuilder = $L.boundStatementBuilder()",
         BoundStatementBuilder.class,
         statementName);
+    if (runtTimeAttributeParam != null) {
+      if (runtTimeAttributeParam != null) {
+        selectBuilder.addStatement(
+            "DaoBase.populateBoundStatementWithAttributes(boundStatementBuilder,$L)",
+            runtTimeAttributeParam.getSimpleName().toString());
+      }
+    }
     if (parameters.size() > 0) {
       if (customClause.isEmpty()) {
         // Parameters are the PK components, we allow them to be named differently

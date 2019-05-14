@@ -25,6 +25,7 @@ import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKi
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.mapper.RuntimeAttributes;
 import com.datastax.oss.driver.api.mapper.annotations.Delete;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.datastax.oss.driver.internal.mapper.processor.ProcessorContext;
@@ -52,6 +53,8 @@ public class DaoDeleteMethodGenerator extends DaoMethodGenerator {
   private static final EnumSet<ReturnTypeKind> SUPPORTED_RETURN_TYPES =
       EnumSet.of(
           VOID, FUTURE_OF_VOID, BOOLEAN, FUTURE_OF_BOOLEAN, RESULT_SET, FUTURE_OF_ASYNC_RESULT_SET);
+
+  private static final String RUNTIME_ATTRIBUTES_NAME = RuntimeAttributes.class.getName();
 
   public DaoDeleteMethodGenerator(
       ExecutableElement methodElement,
@@ -90,6 +93,13 @@ public class DaoDeleteMethodGenerator extends DaoMethodGenerator {
                   + "must take either an entity instance, or the partition key components",
               Delete.class.getSimpleName());
       return Optional.empty();
+    }
+    VariableElement runtTimeAttributeParam = null;
+    int lastParamIndex = methodElement.getParameters().size() - 1;
+    VariableElement potRunTimeParam = methodElement.getParameters().get(lastParamIndex);
+    if (potRunTimeParam.asType().toString().equals(RUNTIME_ATTRIBUTES_NAME)) {
+      runtTimeAttributeParam = potRunTimeParam;
+      parameters = parameters.subList(0, lastParamIndex);
     }
     VariableElement firstParameter = parameters.get(0);
     entityElement = asEntityElement(firstParameter);
@@ -164,7 +174,13 @@ public class DaoDeleteMethodGenerator extends DaoMethodGenerator {
         "$T boundStatementBuilder = $L.boundStatementBuilder()",
         BoundStatementBuilder.class,
         statementName);
-
+    if (runtTimeAttributeParam != null) {
+      if (runtTimeAttributeParam != null) {
+        deleteBuilder.addStatement(
+            "DaoBase.populateBoundStatementWithAttributes(boundStatementBuilder,$L)",
+            runtTimeAttributeParam.getSimpleName().toString());
+      }
+    }
     int nextParameterIndex;
     if (hasEntityParameter) {
       // Bind entity's PK properties

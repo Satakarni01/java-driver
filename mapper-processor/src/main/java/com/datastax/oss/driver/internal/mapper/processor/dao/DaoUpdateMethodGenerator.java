@@ -28,6 +28,7 @@ import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.datastax.oss.driver.internal.mapper.processor.ProcessorContext;
 import com.datastax.oss.driver.internal.mapper.processor.util.generation.GeneratedCodePatterns;
+import com.datastax.oss.driver.internal.querybuilder.DefaultRaw;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import java.util.EnumSet;
@@ -155,16 +156,36 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
     String whereClause = annotation.whereClause();
     methodBuilder.addCode(".where($1T.raw($2S))", QueryBuilder.class, whereClause);
 
-    if (annotation.ifExists()) { // todo handle if Condition as well
-      methodBuilder.addCode(".ifExists()");
-    }
+    maybeAddIfClause(methodBuilder, annotation);
     methodBuilder.addCode(".asCql()");
 
-    // todo should the using be at the beginning of the builder? On Update level
+    // todo using should be at the beginning of the builder - On Update level
     String customUsingClause = annotation.customUsingClause();
     if (!customUsingClause.isEmpty()) {
       methodBuilder.addCode(" + $S", " " + customUsingClause);
     }
     methodBuilder.addCode(")$];\n");
+  }
+
+  private void maybeAddIfClause(MethodSpec.Builder methodBuilder, Update annotation) {
+    if (annotation.ifExists() && !annotation.ifCondition().isEmpty()) {
+      // todo test it
+      context
+          .getMessager()
+          .error(
+              methodElement,
+              "You cannot specify ifExists: %s and ifCondition: %s for: %s method.",
+              annotation.ifExists(),
+              annotation.ifCondition(),
+              Update.class.getSimpleName());
+    }
+
+    if (annotation.ifExists()) {
+      methodBuilder.addCode(".ifExists()");
+    }
+
+    if (!annotation.ifCondition().isEmpty()) {
+      methodBuilder.addCode(".if_(new $1T($2S))", DefaultRaw.class, annotation.ifCondition());
+    }
   }
 }

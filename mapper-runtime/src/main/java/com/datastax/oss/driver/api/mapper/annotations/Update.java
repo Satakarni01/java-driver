@@ -25,7 +25,8 @@ import java.lang.annotation.Target;
 public @interface Update {
 
   boolean ifExists() default false;
-  // todo add if condition
+
+  String ifCondition() default "";
 
   String whereClause();
 

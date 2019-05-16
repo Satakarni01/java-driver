@@ -56,6 +56,8 @@ public class EntityHelperUpdateMethodGenerator implements MethodGenerator {
                 QueryBuilder.class)
             .addCode("$[return update");
 
+    // todo handle Update where there is no getRegularColumns() - if this is empty the returned type
+    // will be UpdateStart instead of UpdateWithAssigments
     for (PropertyDefinition property : entityDefinition.getRegularColumns()) {
       // we cannot use getAllColumns because update cannot SET for PKs
       insertBuilder.addCode(

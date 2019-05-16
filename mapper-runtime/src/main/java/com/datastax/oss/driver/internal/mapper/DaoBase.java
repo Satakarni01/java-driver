@@ -166,7 +166,6 @@ public class DaoBase {
                 && row.getColumnDefinitions().get(0).getName().equals(APPLIED)))
         ? null
         : entityHelper.get(row);
-    // todo  handle if not exists [applied]
   }
 
   protected <EntityT> Optional<EntityT> executeAndMapToOptionalEntity(

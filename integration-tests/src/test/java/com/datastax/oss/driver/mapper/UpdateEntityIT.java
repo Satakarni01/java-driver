@@ -180,6 +180,56 @@ public class UpdateEntityIT extends InventoryITBase {
         .isEqualTo(false);
   }
 
+  @Test
+  public void should_insert_entity_if_condition_is_met() {
+    dao.update(
+        new Product(FLAMETHROWER.getId(), "Description for length 10", new Dimensions(10, 1, 1)));
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
+
+    Product otherProduct =
+        new Product(FLAMETHROWER.getId(), "Other description", new Dimensions(1, 1, 1));
+    assertThat(dao.updateIfLength(otherProduct, 10).wasApplied()).isEqualTo(true);
+  }
+
+  @Test
+  public void should_not_insert_entity_if_condition_is_not_met() {
+    dao.update(
+        new Product(FLAMETHROWER.getId(), "Description for length 10", new Dimensions(10, 1, 1)));
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
+
+    Product otherProduct =
+        new Product(FLAMETHROWER.getId(), "Other description", new Dimensions(1, 1, 1));
+    assertThat(dao.updateIfLength(otherProduct, 20).wasApplied()).isEqualTo(false);
+  }
+
+  @Test
+  public void should_async_insert_entity_if_condition_is_met() {
+    dao.update(
+        new Product(FLAMETHROWER.getId(), "Description for length 10", new Dimensions(10, 1, 1)));
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
+
+    Product otherProduct =
+        new Product(FLAMETHROWER.getId(), "Other description", new Dimensions(1, 1, 1));
+    assertThat(
+            CompletableFutures.getUninterruptibly(dao.updateIfLengthAsync(otherProduct, 10))
+                .wasApplied())
+        .isEqualTo(true);
+  }
+
+  @Test
+  public void should_not_async_insert_entity_if_condition_is_not_met() {
+    dao.update(
+        new Product(FLAMETHROWER.getId(), "Description for length 10", new Dimensions(10, 1, 1)));
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
+
+    Product otherProduct =
+        new Product(FLAMETHROWER.getId(), "Other description", new Dimensions(1, 1, 1));
+    assertThat(
+            CompletableFutures.getUninterruptibly(dao.updateIfLengthAsync(otherProduct, 20))
+                .wasApplied())
+        .isEqualTo(false);
+  }
+
   @Mapper
   public interface InventoryMapper {
     @DaoFactory
@@ -199,22 +249,20 @@ public class UpdateEntityIT extends InventoryITBase {
     @Update(whereClause = "id = :id", ifExists = true)
     ResultSet updateIfExists(Product product);
 
-    // todo does Optional have sense here? - I think that does not
-    //    @Update(whereClause = "id = :id", ifExists = true)
-    //    Optional<ResultSet> updateIfExistsOptional(Product product);
-    //
     @Update(whereClause = "id = :id")
     CompletableFuture<Void> updateAsync(Product product);
+
+    @Update(whereClause = "id = :id", ifCondition = "dimensions.length = :length")
+    ResultSet updateIfLength(Product product, int length);
+
+    @Update(whereClause = "id = :id", ifCondition = "dimensions.length = :length")
+    CompletableFuture<AsyncResultSet> updateIfLengthAsync(Product product, int length);
 
     //    @Update(whereClause = "id = :id", customUsingClause = "USING TIMESTAMP :timestamp")
     //    CompletableFuture<Void> updateAsyncWithBoundTimestamp(Product product, long timestamp);
     //
     @Update(whereClause = "id = :id", ifExists = true)
     CompletableFuture<AsyncResultSet> updateAsyncIfExists(Product product);
-
-    // todo does Optional have sense here? - I think that does not
-    //    @Update(whereClause = "id = :id", ifExists = true)
-    //    CompletableFuture<Optional<Product>> updateAsyncIfExistsOptional(Product product);
 
     @Select
     Product findById(UUID productId);

@@ -130,7 +130,7 @@ public class DaoImplementationGenerator extends SingleFileCodeGenerator
                 .getMessager()
                 .error(
                     methodElement,
-                    "Unrecognized method signature: no implementation will be generated");
+                    "[DaoImplementationGenerator] Unrecognized method signature: no implementation will be generated");
           } else {
             maybeGenerator.flatMap(MethodGenerator::generate).ifPresent(classBuilder::addMethod);
           }

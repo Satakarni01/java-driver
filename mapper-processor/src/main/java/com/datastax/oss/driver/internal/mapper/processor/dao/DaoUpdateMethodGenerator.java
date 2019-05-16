@@ -78,7 +78,6 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
       return Optional.empty();
     }
 
-    // todo probably return only false|true (wasApplied) + entity
     // Validate the return type:
     ReturnType returnType = parseReturnType(methodElement.getReturnType());
     if (!SUPPORTED_RETURN_TYPES.contains(returnType.kind)) {

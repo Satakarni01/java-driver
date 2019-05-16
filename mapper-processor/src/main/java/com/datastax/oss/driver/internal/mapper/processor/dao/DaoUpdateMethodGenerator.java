@@ -168,12 +168,11 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
 
   private void maybeAddIfClause(MethodSpec.Builder methodBuilder, Update annotation) {
     if (annotation.ifExists() && !annotation.ifCondition().isEmpty()) {
-      // todo test it
       context
           .getMessager()
           .error(
               methodElement,
-              "You cannot specify ifExists: %s and ifCondition: %s for: %s method.",
+              "You cannot specify both ifExists(%s) and ifCondition(%s) for %s method.",
               annotation.ifExists(),
               annotation.ifCondition(),
               Update.class.getSimpleName());

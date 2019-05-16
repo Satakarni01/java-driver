@@ -56,7 +56,9 @@ public class EntityHelperUpdateMethodGenerator implements MethodGenerator {
                 QueryBuilder.class)
             .addCode("$[return update");
 
-    for (PropertyDefinition property : entityDefinition.getAllColumns()) {
+
+    for (PropertyDefinition property : entityDefinition.getRegularColumns()) {
+      // we cannot use getAllColumns because update cannot SET for PKs
       insertBuilder.addCode(
           "\n.setColumn($1S, $2T.bindMarker($1S))", property.getCqlName(), QueryBuilder.class);
     }

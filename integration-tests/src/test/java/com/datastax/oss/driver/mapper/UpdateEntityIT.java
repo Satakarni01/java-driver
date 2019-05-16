@@ -148,8 +148,6 @@ public class UpdateEntityIT extends InventoryITBase {
 
   @Test
   public void should_not_insert_entity_if_not_exists() {
-    dao.update(FLAMETHROWER);
-    assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     Product otherProduct =
@@ -168,6 +166,18 @@ public class UpdateEntityIT extends InventoryITBase {
             CompletableFutures.getUninterruptibly(dao.updateAsyncIfExists(otherProduct))
                 .wasApplied())
         .isEqualTo(true);
+  }
+
+  @Test
+  public void should_not_insert_entity_if_not_exists_asynchronously() {
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
+
+    Product otherProduct =
+        new Product(FLAMETHROWER.getId(), "Other description", new Dimensions(1, 1, 1));
+    assertThat(
+            CompletableFutures.getUninterruptibly(dao.updateAsyncIfExists(otherProduct))
+                .wasApplied())
+        .isEqualTo(false);
   }
 
   @Mapper

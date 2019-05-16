@@ -15,11 +15,9 @@
  */
 package com.datastax.oss.driver.internal.mapper.processor.dao;
 
-import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.ENTITY;
-import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.FUTURE_OF_ENTITY;
-import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.FUTURE_OF_OPTIONAL_ENTITY;
+import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.FUTURE_OF_ASYNC_RESULT_SET;
 import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.FUTURE_OF_VOID;
-import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.OPTIONAL_ENTITY;
+import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.RESULT_SET;
 import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.VOID;
 
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
@@ -42,13 +40,7 @@ import javax.lang.model.element.VariableElement;
 public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
 
   private static final EnumSet<ReturnTypeKind> SUPPORTED_RETURN_TYPES =
-      EnumSet.of(
-          VOID,
-          FUTURE_OF_VOID,
-          ENTITY,
-          FUTURE_OF_ENTITY,
-          OPTIONAL_ENTITY,
-          FUTURE_OF_OPTIONAL_ENTITY);
+      EnumSet.of(VOID, FUTURE_OF_VOID, RESULT_SET, FUTURE_OF_ASYNC_RESULT_SET);
 
   public DaoUpdateMethodGenerator(
       ExecutableElement methodElement,

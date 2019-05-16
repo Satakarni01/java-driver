@@ -163,6 +163,7 @@ public class DaoInsertMethodGenerator extends DaoMethodGenerator {
     }
     methodBuilder.addCode(".asCql()");
 
+    // todo for Update "using" needs to be before SET (before EntityHelperUpdateMethodGenerator#60)
     String customUsingClause = annotation.customUsingClause();
     if (!customUsingClause.isEmpty()) {
       methodBuilder.addCode(" + $S", " " + customUsingClause);

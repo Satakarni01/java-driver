@@ -252,28 +252,28 @@ public class UpdateEntityIT extends InventoryITBase {
   @Dao
   public interface ProductDao {
 
-    @Update(whereClause = "id = :id")
+    @Update
     void update(Product product);
 
-    @Update(whereClause = "id = :id", customUsingClause = "USING TIMESTAMP :timestamp")
+    @Update(customUsingClause = "USING TIMESTAMP :timestamp")
     void updateWithBoundTimestamp(Product product, long timestamp);
 
-    @Update(whereClause = "id = :id", ifExists = true)
+    @Update(ifExists = true)
     ResultSet updateIfExists(Product product);
 
-    @Update(whereClause = "id = :id")
+    @Update
     CompletableFuture<Void> updateAsync(Product product);
 
-    @Update(whereClause = "id = :id", customIfClause = "IF dimensions.length = :length")
+    @Update(customIfClause = "IF dimensions.length = :length")
     ResultSet updateIfLength(Product product, int length);
 
-    @Update(whereClause = "id = :id", customIfClause = "IF dimensions.length = :length")
+    @Update(customIfClause = "IF dimensions.length = :length")
     CompletableFuture<AsyncResultSet> updateIfLengthAsync(Product product, int length);
 
-    @Update(whereClause = "id = :id", customUsingClause = "USING TIMESTAMP :timestamp")
+    @Update(customUsingClause = "USING TIMESTAMP :timestamp")
     CompletableFuture<Void> updateAsyncWithBoundTimestamp(Product product, long timestamp);
 
-    @Update(whereClause = "id = :id", ifExists = true)
+    @Update(ifExists = true)
     CompletableFuture<AsyncResultSet> updateAsyncIfExists(Product product);
 
     @Select
@@ -282,7 +282,7 @@ public class UpdateEntityIT extends InventoryITBase {
 
   @Dao
   public interface OnlyPKDao {
-    @Update(whereClause = "id = :id")
+    @Update
     void update(OnlyPK onlyPK);
   }
 }

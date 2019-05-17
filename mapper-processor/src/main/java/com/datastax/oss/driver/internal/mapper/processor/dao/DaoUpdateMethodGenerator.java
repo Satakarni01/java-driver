@@ -157,8 +157,6 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
     Update annotation = methodElement.getAnnotation(Update.class);
 
     maybeAddUsingClause(methodBuilder, annotation.customUsingClause());
-    String whereClause = annotation.whereClause();
-    methodBuilder.addCode(".where($1T.raw($2S))", QueryBuilder.class, whereClause);
 
     maybeAddIfClause(methodBuilder, annotation);
 

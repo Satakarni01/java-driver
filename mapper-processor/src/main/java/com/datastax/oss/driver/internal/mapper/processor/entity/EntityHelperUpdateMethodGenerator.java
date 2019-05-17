@@ -18,6 +18,7 @@ package com.datastax.oss.driver.internal.mapper.processor.entity;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.mapper.annotations.Update;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateStart;
 import com.datastax.oss.driver.internal.mapper.processor.MethodGenerator;
 import com.datastax.oss.driver.internal.mapper.processor.ProcessorContext;
@@ -65,7 +66,17 @@ public class EntityHelperUpdateMethodGenerator implements MethodGenerator {
                   + ": $2T.update(keyspaceId, tableId)",
               UpdateStart.class,
               QueryBuilder.class)
-          .addCode("$[return ($T)update", DefaultUpdate.class);
+          .addCode("$[return ($1T)(($1T) (($1T)update)", DefaultUpdate.class);
+
+      for (PropertyDefinition property : entityDefinition.getPrimaryKey()) {
+        updateBuilder.addCode(
+            "\n.where($1T.column($2S).isEqualTo($3T.bindMarker($2S)))",
+            Relation.class,
+            property.getCqlName(),
+            QueryBuilder.class);
+      }
+
+      updateBuilder.addCode(")");
 
       for (PropertyDefinition property : entityDefinition.getRegularColumns()) {
         // we cannot use getAllColumns because update cannot SET for PKs

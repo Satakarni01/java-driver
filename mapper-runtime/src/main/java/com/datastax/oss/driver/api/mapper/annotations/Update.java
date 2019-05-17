@@ -28,7 +28,5 @@ public @interface Update {
 
   String customIfClause() default "";
 
-  String whereClause();
-
   String customUsingClause() default "";
 }

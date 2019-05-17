@@ -16,6 +16,7 @@
 package com.datastax.oss.driver.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -55,6 +56,8 @@ public class UpdateEntityIT extends InventoryITBase {
   @ClassRule public static TestRule chain = RuleChain.outerRule(ccm).around(sessionRule);
 
   private static ProductDao dao;
+  private static OnlyPKDao onlyPKDao;
+  private static InventoryMapper inventoryMapper;
 
   @BeforeClass
   public static void setup() {
@@ -65,7 +68,7 @@ public class UpdateEntityIT extends InventoryITBase {
           SimpleStatement.builder(query).setExecutionProfile(sessionRule.slowProfile()).build());
     }
 
-    InventoryMapper inventoryMapper = new UpdateEntityIT_InventoryMapperBuilder(session).build();
+    inventoryMapper = new UpdateEntityIT_InventoryMapperBuilder(session).build();
     dao = inventoryMapper.productDao(sessionRule.keyspace());
   }
 
@@ -74,6 +77,10 @@ public class UpdateEntityIT extends InventoryITBase {
     CqlSession session = sessionRule.session();
     session.execute(
         SimpleStatement.builder("TRUNCATE product")
+            .setExecutionProfile(sessionRule.slowProfile())
+            .build());
+    session.execute(
+        SimpleStatement.builder("TRUNCATE only_pk")
             .setExecutionProfile(sessionRule.slowProfile())
             .build());
   }
@@ -227,10 +234,20 @@ public class UpdateEntityIT extends InventoryITBase {
         .isEqualTo(false);
   }
 
+  @Test
+  public void should_throw_when_try_to_use_dao_with_update_only_pk() {
+    assertThatThrownBy(() -> onlyPKDao = inventoryMapper.onlyPkDao(sessionRule.keyspace()))
+        .hasCauseInstanceOf(UnsupportedOperationException.class)
+        .hasStackTraceContaining("Entity onlyPK does not have any non PK columns.");
+  }
+
   @Mapper
   public interface InventoryMapper {
     @DaoFactory
     ProductDao productDao(@DaoKeyspace CqlIdentifier keyspace);
+
+    @DaoFactory
+    OnlyPKDao onlyPkDao(@DaoKeyspace CqlIdentifier keyspace);
   }
 
   @Dao
@@ -262,5 +279,11 @@ public class UpdateEntityIT extends InventoryITBase {
 
     @Select
     Product findById(UUID productId);
+  }
+
+  @Dao
+  public interface OnlyPKDao {
+    @Update(whereClause = "id = :id")
+    void update(OnlyPK onlyPK);
   }
 }

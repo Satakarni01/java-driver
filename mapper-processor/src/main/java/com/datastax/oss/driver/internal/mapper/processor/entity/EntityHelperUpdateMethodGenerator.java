@@ -16,6 +16,7 @@
 package com.datastax.oss.driver.internal.mapper.processor.entity;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.mapper.annotations.Update;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateStart;
 import com.datastax.oss.driver.internal.mapper.processor.MethodGenerator;
@@ -42,26 +43,37 @@ public class EntityHelperUpdateMethodGenerator implements MethodGenerator {
         MethodSpec.methodBuilder("update")
             .addAnnotation(Override.class)
             .addModifiers(Modifier.PUBLIC)
-            .returns(DefaultUpdate.class)
-            .addStatement("$T keyspaceId = context.getKeyspaceId()", CqlIdentifier.class)
-            .addStatement("$T tableId = context.getTableId()", CqlIdentifier.class)
-            .beginControlFlow("if (tableId == null)")
-            .addStatement("tableId = DEFAULT_TABLE_ID")
-            .endControlFlow()
-            .addStatement(
-                "$1T update = (keyspaceId == null)\n"
-                    + "? $2T.update(tableId)\n"
-                    + ": $2T.update(keyspaceId, tableId)",
-                UpdateStart.class,
-                QueryBuilder.class)
-            .addCode("$[return ($T)update", DefaultUpdate.class);
+            .returns(DefaultUpdate.class);
 
-    for (PropertyDefinition property : entityDefinition.getRegularColumns()) {
-      // we cannot use getAllColumns because update cannot SET for PKs
-      updateBuilder.addCode(
-          "\n.setColumn($1S, $2T.bindMarker($1S))", property.getCqlName(), QueryBuilder.class);
+    if (!entityDefinition.getRegularColumns().iterator().hasNext()) {
+      updateBuilder.addStatement(
+          "throw new $T($S)",
+          UnsupportedOperationException.class,
+          String.format(
+              "Entity %s does not have any non PK columns. %s is not possible",
+              entityDefinition.getCqlName(), Update.class.getSimpleName()));
+    } else {
+      updateBuilder
+          .addStatement("$T keyspaceId = context.getKeyspaceId()", CqlIdentifier.class)
+          .addStatement("$T tableId = context.getTableId()", CqlIdentifier.class)
+          .beginControlFlow("if (tableId == null)")
+          .addStatement("tableId = DEFAULT_TABLE_ID")
+          .endControlFlow()
+          .addStatement(
+              "$1T update = (keyspaceId == null)\n"
+                  + "? $2T.update(tableId)\n"
+                  + ": $2T.update(keyspaceId, tableId)",
+              UpdateStart.class,
+              QueryBuilder.class)
+          .addCode("$[return ($T)update", DefaultUpdate.class);
+
+      for (PropertyDefinition property : entityDefinition.getRegularColumns()) {
+        // we cannot use getAllColumns because update cannot SET for PKs
+        updateBuilder.addCode(
+            "\n.setColumn($1S, $2T.bindMarker($1S))", property.getCqlName(), QueryBuilder.class);
+      }
+      updateBuilder.addCode("$];\n");
     }
-    updateBuilder.addCode("$];\n");
     return Optional.of(updateBuilder.build());
   }
 }

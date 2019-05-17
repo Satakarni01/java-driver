@@ -68,7 +68,7 @@ public class RunTimeAttributesIT {
   private static String PAGING_STATE = "paging_state";
   private static int PAGE_SIZE = 13;
 
-  private static final Simple simple=new Simple(UUID.randomUUID(), "DATA");
+  private static final Simple simple = new Simple(UUID.randomUUID(), "DATA");
 
   @Before
   public void setup() {
@@ -92,7 +92,8 @@ public class RunTimeAttributesIT {
                     paramTypes))
                 .then(noRows()));
     CqlSession session = SessionUtils.newSession(simulacronRule);
-    InventoryMapper inventoryMapper = new RunTimeAttributesIT_InventoryMapperBuilder(session).build();
+    InventoryMapper inventoryMapper =
+        new RunTimeAttributesIT_InventoryMapperBuilder(session).build();
     simpleDao = inventoryMapper.simpleDao(sessionRule.keyspace());
     RuntimeAttributes attributes = buildRunTimeAttributes();
     simulacronRule.cluster().clearLogs();
@@ -118,7 +119,8 @@ public class RunTimeAttributesIT {
                 .then(noRows())
                 .delay(1, TimeUnit.MILLISECONDS));
     CqlSession session = SessionUtils.newSession(simulacronRule);
-    InventoryMapper inventoryMapper = new RunTimeAttributesIT_InventoryMapperBuilder(session).build();
+    InventoryMapper inventoryMapper =
+        new RunTimeAttributesIT_InventoryMapperBuilder(session).build();
     simpleDao = inventoryMapper.simpleDao(sessionRule.keyspace());
     RuntimeAttributes attributes = buildRunTimeAttributes();
     simulacronRule.cluster().clearLogs();
@@ -144,7 +146,8 @@ public class RunTimeAttributesIT {
                 .then(noRows())
                 .delay(1, TimeUnit.MILLISECONDS));
     CqlSession session = SessionUtils.newSession(simulacronRule);
-    InventoryMapper inventoryMapper = new RunTimeAttributesIT_InventoryMapperBuilder(session).build();
+    InventoryMapper inventoryMapper =
+        new RunTimeAttributesIT_InventoryMapperBuilder(session).build();
     simpleDao = inventoryMapper.simpleDao(sessionRule.keyspace());
 
     RuntimeAttributes attributes = buildRunTimeAttributes();

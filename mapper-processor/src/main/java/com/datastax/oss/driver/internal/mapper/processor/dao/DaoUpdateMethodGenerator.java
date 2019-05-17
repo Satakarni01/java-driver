@@ -29,11 +29,15 @@ import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.datastax.oss.driver.internal.mapper.processor.ProcessorContext;
 import com.datastax.oss.driver.internal.mapper.processor.util.generation.GeneratedCodePatterns;
 import com.datastax.oss.driver.internal.querybuilder.DefaultRaw;
+import com.datastax.oss.driver.internal.querybuilder.update.DefaultUpdate;
+import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -42,6 +46,14 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
 
   private static final EnumSet<ReturnTypeKind> SUPPORTED_RETURN_TYPES =
       EnumSet.of(VOID, FUTURE_OF_VOID, RESULT_SET, FUTURE_OF_ASYNC_RESULT_SET);
+  private static final Pattern USING_TIMESTAMP_VALUE_PATTER =
+      Pattern.compile("(?i)USING TIMESTAMP (\\d+$)");
+  private static final Pattern USING_TIMESTAMP_BIND_MARKER_PATTERN =
+      Pattern.compile("(?i)USING TIMESTAMP :(\\w+$)");
+  private static final Pattern USING_TTL_VALUE_PATTER = Pattern.compile("(?i)USING TTL (\\d+)$");
+  private static final Pattern USING_TTL_BIND_MARKER_PATTERN =
+      Pattern.compile("(?i)USING TTL :(\\w+)$");
+  // todo should we support ? bindMarker
 
   public DaoUpdateMethodGenerator(
       ExecutableElement methodElement,
@@ -147,23 +159,63 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
   private void generatePrepareRequest(
       MethodSpec.Builder methodBuilder, String requestName, String helperFieldName) {
     methodBuilder.addCode(
-        "$[$1T $2L = $1T.newInstance($3L.update()",
+        "$[$1T $2L = $1T.newInstance((($4T)$3L.update()",
         SimpleStatement.class,
         requestName,
-        helperFieldName);
+        helperFieldName,
+        DefaultUpdate.class);
     Update annotation = methodElement.getAnnotation(Update.class);
+
+    maybeAddUsingClause(methodBuilder, annotation.customUsingClause());
     String whereClause = annotation.whereClause();
     methodBuilder.addCode(".where($1T.raw($2S))", QueryBuilder.class, whereClause);
 
     maybeAddIfClause(methodBuilder, annotation);
     methodBuilder.addCode(".asCql()");
 
-    // todo using should be at the beginning of the builder - On Update level
-    String customUsingClause = annotation.customUsingClause();
-    if (!customUsingClause.isEmpty()) {
-      methodBuilder.addCode(" + $S", " " + customUsingClause);
-    }
     methodBuilder.addCode(")$];\n");
+  }
+
+  @VisibleForTesting
+  void maybeAddUsingClause(MethodSpec.Builder methodBuilder, String customUsingClause) {
+    if (customUsingClause.isEmpty()) {
+      methodBuilder.addCode(")");
+      return;
+    }
+    Matcher usingTimestampBindMakerMatcher =
+        USING_TIMESTAMP_BIND_MARKER_PATTERN.matcher(customUsingClause);
+    if (usingTimestampBindMakerMatcher.matches()) {
+      methodBuilder.addCode(
+          ".usingTimestamp($1T.bindMarker($2S)))",
+          QueryBuilder.class,
+          usingTimestampBindMakerMatcher.group(1));
+      return;
+    }
+    Matcher usingTimestampValueMatcher = USING_TIMESTAMP_VALUE_PATTER.matcher(customUsingClause);
+    if (usingTimestampValueMatcher.matches()) {
+      methodBuilder.addCode(".usingTimestamp($L))", usingTimestampValueMatcher.group(1));
+      return;
+    }
+    Matcher usingTtlBindMakerMatcher = USING_TTL_BIND_MARKER_PATTERN.matcher(customUsingClause);
+    if (usingTtlBindMakerMatcher.matches()) {
+      methodBuilder.addCode(
+          ".usingTtl($1T.bindMarker($2S)))", QueryBuilder.class, usingTtlBindMakerMatcher.group(1));
+      return;
+    }
+    Matcher usingTtlValueMatcher = USING_TTL_VALUE_PATTER.matcher(customUsingClause);
+    if (usingTtlValueMatcher.matches()) {
+      methodBuilder.addCode(".usingTtl($L))", usingTtlValueMatcher.group(1));
+      return;
+    }
+
+    // no match - it means that using clause was incorrect
+    context
+        .getMessager()
+        .error(
+            methodElement,
+            "customUsingClause: %s on the: %s method is incorrect.",
+            customUsingClause,
+            Update.class.getSimpleName());
   }
 
   private void maybeAddIfClause(MethodSpec.Builder methodBuilder, Update annotation) {

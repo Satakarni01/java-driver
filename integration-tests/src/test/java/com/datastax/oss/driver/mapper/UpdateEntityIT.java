@@ -21,6 +21,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.mapper.annotations.Dao;
 import com.datastax.oss.driver.api.mapper.annotations.DaoFactory;
@@ -93,49 +94,47 @@ public class UpdateEntityIT extends InventoryITBase {
     assertThat(dao.findById(FLAMETHROWER.getId())).isEqualTo(FLAMETHROWER);
   }
 
-  //  @Ignore("Using not work yet")
-  //  @Test
-  //  public void should_insert_entity_with_custom_clause() {
-  //    assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
-  //
-  //    long timestamp = 1234;
-  //    dao.updateWithBoundTimestamp(FLAMETHROWER, timestamp);
-  //
-  //    CqlSession session = sessionRule.session();
-  //    Row row =
-  //        session
-  //            .execute(
-  //                SimpleStatement.newInstance(
-  //                    "SELECT WRITETIME(description) FROM product WHERE id = ?",
-  //                    FLAMETHROWER.getId()))
-  //            .one();
-  //    assert row != null;
-  //    long writeTime = row.getLong(0);
-  //    assertThat(writeTime).isEqualTo(timestamp);
-  //  }
+  @Test
+  public void should_insert_entity_with_custom_clause() {
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
-  //  @Ignore("using not working yet")
-  //  @Test
-  //  public void should_insert_entity_with_custom_clause_asynchronously() {
-  //    assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
-  //
-  //    long timestamp = 1234;
-  //    CompletableFutures.getUninterruptibly(
-  //        dao.updateAsyncWithBoundTimestamp(FLAMETHROWER, timestamp));
-  //
-  //    CqlSession session = sessionRule.session();
-  //    Row row =
-  //        session
-  //            .execute(
-  //                SimpleStatement.newInstance(
-  //                    "SELECT WRITETIME(description) FROM product WHERE id = ?",
-  //                    FLAMETHROWER.getId()))
-  //            .one();
-  //    assert row != null;
-  //    long writeTime = row.getLong(0);
-  //    assertThat(writeTime).isEqualTo(timestamp);
-  //  }
-  //
+    long timestamp = 1234;
+    dao.updateWithBoundTimestamp(FLAMETHROWER, timestamp);
+
+    CqlSession session = sessionRule.session();
+    Row row =
+        session
+            .execute(
+                SimpleStatement.newInstance(
+                    "SELECT WRITETIME(description) FROM product WHERE id = ?",
+                    FLAMETHROWER.getId()))
+            .one();
+    assert row != null;
+    long writeTime = row.getLong(0);
+    assertThat(writeTime).isEqualTo(timestamp);
+  }
+
+  @Test
+  public void should_insert_entity_with_custom_clause_asynchronously() {
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
+
+    long timestamp = 1234;
+    CompletableFutures.getUninterruptibly(
+        dao.updateAsyncWithBoundTimestamp(FLAMETHROWER, timestamp));
+
+    CqlSession session = sessionRule.session();
+    Row row =
+        session
+            .execute(
+                SimpleStatement.newInstance(
+                    "SELECT WRITETIME(description) FROM product WHERE id = ?",
+                    FLAMETHROWER.getId()))
+            .one();
+    assert row != null;
+    long writeTime = row.getLong(0);
+    assertThat(writeTime).isEqualTo(timestamp);
+  }
+
   @Test
   public void should_insert_entity_if_exists() {
     dao.update(FLAMETHROWER);
@@ -242,9 +241,8 @@ public class UpdateEntityIT extends InventoryITBase {
     @Update(whereClause = "id = :id")
     void update(Product product);
 
-    //
-    //    @Update(whereClause = "id = :id", customUsingClause = "USING TIMESTAMP :timestamp")
-    //    void updateWithBoundTimestamp(Product product, long timestamp);
+    @Update(whereClause = "id = :id", customUsingClause = "USING TIMESTAMP :timestamp")
+    void updateWithBoundTimestamp(Product product, long timestamp);
 
     @Update(whereClause = "id = :id", ifExists = true)
     ResultSet updateIfExists(Product product);
@@ -258,9 +256,9 @@ public class UpdateEntityIT extends InventoryITBase {
     @Update(whereClause = "id = :id", ifCondition = "dimensions.length = :length")
     CompletableFuture<AsyncResultSet> updateIfLengthAsync(Product product, int length);
 
-    //    @Update(whereClause = "id = :id", customUsingClause = "USING TIMESTAMP :timestamp")
-    //    CompletableFuture<Void> updateAsyncWithBoundTimestamp(Product product, long timestamp);
-    //
+    @Update(whereClause = "id = :id", customUsingClause = "USING TIMESTAMP :timestamp")
+    CompletableFuture<Void> updateAsyncWithBoundTimestamp(Product product, long timestamp);
+
     @Update(whereClause = "id = :id", ifExists = true)
     CompletableFuture<AsyncResultSet> updateAsyncIfExists(Product product);
 

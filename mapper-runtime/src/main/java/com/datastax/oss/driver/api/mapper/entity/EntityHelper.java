@@ -28,7 +28,7 @@ import com.datastax.oss.driver.api.querybuilder.BuildableQuery;
 import com.datastax.oss.driver.api.querybuilder.delete.Delete;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
+import com.datastax.oss.driver.api.querybuilder.update.Update;
 
 /**
  * A set of utility methods related to a particular mapped entity.
@@ -108,7 +108,7 @@ public interface EntityHelper<EntityT> {
    */
   RegularInsert insert();
 
-  UpdateWithAssignments update();
+  Update update();
 
   /**
    * Builds a select query to fetch an instance of the entity by primary key (partition key +

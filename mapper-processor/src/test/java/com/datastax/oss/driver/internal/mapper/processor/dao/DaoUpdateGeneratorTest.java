@@ -81,6 +81,20 @@ public class DaoUpdateGeneratorTest extends DaoMethodGeneratorTest {
             .returns(TypeName.VOID)
             .build(),
       },
+      {
+        "customUsingClause: USING tt a on the: Update method is incorrect.",
+        MethodSpec.methodBuilder("update")
+            .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+            .addAnnotation(
+                AnnotationSpec.builder(Update.class)
+                    .addMember("whereClause", "$S", "id = :id")
+                    .addMember("ifExists", "true")
+                    .addMember("customUsingClause", "$S", "USING tt a")
+                    .build())
+            .addParameter(ParameterSpec.builder(ENTITY_CLASS_NAME, "entity").build())
+            .returns(TypeName.VOID)
+            .build(),
+      },
     };
   }
 }

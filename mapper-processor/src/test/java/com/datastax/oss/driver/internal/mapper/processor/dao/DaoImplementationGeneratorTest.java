@@ -23,7 +23,6 @@ import org.junit.Test;
 
 public class DaoImplementationGeneratorTest extends DaoMethodGeneratorTest {
 
-  // todo handle Update where there is no set
   @Test
   public void should_fail_if_method_is_not_annotated() {
     should_fail_with_expected_error(

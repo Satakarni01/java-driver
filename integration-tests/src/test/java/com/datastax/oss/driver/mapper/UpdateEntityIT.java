@@ -240,6 +240,42 @@ public class UpdateEntityIT extends InventoryITBase {
         .hasStackTraceContaining("Entity onlyPK does not have any non PK columns.");
   }
 
+  @Test
+  public void should_insert_entity_and_return_was_applied() {
+    dao.update(FLAMETHROWER);
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
+
+    assertThat(dao.updateReturnWasApplied(FLAMETHROWER)).isTrue();
+    assertThat(dao.findById(FLAMETHROWER.getId())).isEqualTo(FLAMETHROWER);
+  }
+
+  @Test
+  public void should_not_insert_entity_and_return_was_not_applied() {
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
+
+    assertThat(dao.updateReturnWasApplied(FLAMETHROWER)).isFalse();
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
+  }
+
+  @Test
+  public void should_insert_entity_and_return_was_applied_async() {
+    dao.update(FLAMETHROWER);
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
+
+    assertThat(CompletableFutures.getUninterruptibly(dao.updateReturnWasAppliedAsync(FLAMETHROWER)))
+        .isTrue();
+    assertThat(dao.findById(FLAMETHROWER.getId())).isEqualTo(FLAMETHROWER);
+  }
+
+  @Test
+  public void should_not_insert_entity_and_return_was_not_applied_async() {
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
+
+    assertThat(CompletableFutures.getUninterruptibly(dao.updateReturnWasAppliedAsync(FLAMETHROWER)))
+        .isFalse();
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
+  }
+
   @Mapper
   public interface InventoryMapper {
     @DaoFactory
@@ -275,6 +311,12 @@ public class UpdateEntityIT extends InventoryITBase {
 
     @Update(ifExists = true)
     CompletableFuture<AsyncResultSet> updateAsyncIfExists(Product product);
+
+    @Update(ifExists = true)
+    boolean updateReturnWasApplied(Product product);
+
+    @Update(ifExists = true)
+    CompletableFuture<Boolean> updateReturnWasAppliedAsync(Product product);
 
     @Select
     Product findById(UUID productId);

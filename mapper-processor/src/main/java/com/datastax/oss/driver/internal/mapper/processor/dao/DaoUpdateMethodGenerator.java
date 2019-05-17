@@ -15,7 +15,9 @@
  */
 package com.datastax.oss.driver.internal.mapper.processor.dao;
 
+import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.BOOLEAN;
 import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.FUTURE_OF_ASYNC_RESULT_SET;
+import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.FUTURE_OF_BOOLEAN;
 import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.FUTURE_OF_VOID;
 import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.RESULT_SET;
 import static com.datastax.oss.driver.internal.mapper.processor.dao.ReturnTypeKind.VOID;
@@ -44,7 +46,8 @@ import javax.lang.model.element.VariableElement;
 public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
 
   private static final EnumSet<ReturnTypeKind> SUPPORTED_RETURN_TYPES =
-      EnumSet.of(VOID, FUTURE_OF_VOID, RESULT_SET, FUTURE_OF_ASYNC_RESULT_SET);
+      EnumSet.of(
+          VOID, FUTURE_OF_VOID, RESULT_SET, FUTURE_OF_ASYNC_RESULT_SET, BOOLEAN, FUTURE_OF_BOOLEAN);
   private static final Pattern USING_TIMESTAMP_VALUE_PATTER =
       Pattern.compile("(?i)USING TIMESTAMP (\\d+$)");
   private static final Pattern USING_TIMESTAMP_BIND_MARKER_PATTERN =

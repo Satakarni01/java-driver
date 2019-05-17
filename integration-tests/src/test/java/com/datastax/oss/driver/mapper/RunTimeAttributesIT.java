@@ -21,18 +21,24 @@ import static com.datastax.oss.simulacron.common.stubbing.PrimeDsl.when;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.DefaultConsistencyLevel;
 import com.datastax.oss.driver.api.mapper.DefaultRunTimeAttributes;
 import com.datastax.oss.driver.api.mapper.DefaultRunTimeAttributesBuilder;
 import com.datastax.oss.driver.api.mapper.RuntimeAttributes;
+import com.datastax.oss.driver.api.mapper.annotations.Dao;
+import com.datastax.oss.driver.api.mapper.annotations.DaoFactory;
+import com.datastax.oss.driver.api.mapper.annotations.DaoKeyspace;
+import com.datastax.oss.driver.api.mapper.annotations.Delete;
+import com.datastax.oss.driver.api.mapper.annotations.Entity;
+import com.datastax.oss.driver.api.mapper.annotations.Insert;
+import com.datastax.oss.driver.api.mapper.annotations.Mapper;
+import com.datastax.oss.driver.api.mapper.annotations.PartitionKey;
+import com.datastax.oss.driver.api.mapper.annotations.Select;
 import com.datastax.oss.driver.api.testinfra.session.SessionRule;
 import com.datastax.oss.driver.api.testinfra.session.SessionUtils;
 import com.datastax.oss.driver.api.testinfra.simulacron.SimulacronRule;
-import com.datastax.oss.driver.mapper.model.inventory.InventoryMapper;
-import com.datastax.oss.driver.mapper.model.inventory.InventoryMapperBuilder;
-import com.datastax.oss.driver.mapper.model.inventory.Simple;
-import com.datastax.oss.driver.mapper.model.inventory.SimpleDao;
 import com.datastax.oss.protocol.internal.Message;
 import com.datastax.oss.protocol.internal.request.Execute;
 import com.datastax.oss.simulacron.common.cluster.ClusterQueryLogReport;
@@ -42,6 +48,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
@@ -58,9 +65,10 @@ public class RunTimeAttributesIT {
 
   private static SimpleDao simpleDao;
 
-  private static Simple simple = new Simple(UUID.randomUUID(), "DATA");
   private static String PAGING_STATE = "paging_state";
   private static int PAGE_SIZE = 13;
+
+  private static final Simple simple=new Simple(UUID.randomUUID(), "DATA");
 
   @Before
   public void setup() {
@@ -84,7 +92,7 @@ public class RunTimeAttributesIT {
                     paramTypes))
                 .then(noRows()));
     CqlSession session = SessionUtils.newSession(simulacronRule);
-    InventoryMapper inventoryMapper = new InventoryMapperBuilder(session).build();
+    InventoryMapper inventoryMapper = new RunTimeAttributesIT_InventoryMapperBuilder(session).build();
     simpleDao = inventoryMapper.simpleDao(sessionRule.keyspace());
     RuntimeAttributes attributes = buildRunTimeAttributes();
     simulacronRule.cluster().clearLogs();
@@ -110,7 +118,7 @@ public class RunTimeAttributesIT {
                 .then(noRows())
                 .delay(1, TimeUnit.MILLISECONDS));
     CqlSession session = SessionUtils.newSession(simulacronRule);
-    InventoryMapper inventoryMapper = new InventoryMapperBuilder(session).build();
+    InventoryMapper inventoryMapper = new RunTimeAttributesIT_InventoryMapperBuilder(session).build();
     simpleDao = inventoryMapper.simpleDao(sessionRule.keyspace());
     RuntimeAttributes attributes = buildRunTimeAttributes();
     simulacronRule.cluster().clearLogs();
@@ -136,7 +144,7 @@ public class RunTimeAttributesIT {
                 .then(noRows())
                 .delay(1, TimeUnit.MILLISECONDS));
     CqlSession session = SessionUtils.newSession(simulacronRule);
-    InventoryMapper inventoryMapper = new InventoryMapperBuilder(session).build();
+    InventoryMapper inventoryMapper = new RunTimeAttributesIT_InventoryMapperBuilder(session).build();
     simpleDao = inventoryMapper.simpleDao(sessionRule.keyspace());
 
     RuntimeAttributes attributes = buildRunTimeAttributes();
@@ -169,5 +177,77 @@ public class RunTimeAttributesIT {
     assertThat(queryExecute.options.pageSize).isEqualTo(PAGE_SIZE);
     String pagingState = UTF_8.decode(queryExecute.options.pagingState).toString();
     assertThat(pagingState).isEqualTo(PAGING_STATE);
+  }
+
+  @Mapper
+  public interface InventoryMapper {
+    @DaoFactory
+    RunTimeAttributesIT.SimpleDao simpleDao(@DaoKeyspace CqlIdentifier keyspace);
+  }
+
+  @Dao
+  public interface SimpleDao {
+    @Insert
+    void save(Simple simple, RuntimeAttributes attributes);
+
+    @Delete
+    void delete(Simple simple, RuntimeAttributes attributes);
+
+    @Select
+    Simple findByPk(UUID pk, RuntimeAttributes attributes);
+  }
+
+  @Entity
+  public static class Simple {
+    @PartitionKey private UUID pk;
+    private String data;
+
+    public Simple() {}
+
+    public Simple(UUID pk, String data) {
+      this.pk = pk;
+      this.data = data;
+    }
+
+    public UUID getPk() {
+      return pk;
+    }
+
+    public String getData() {
+      return data;
+    }
+
+    public void setPk(UUID pk) {
+
+      this.pk = pk;
+    }
+
+    public void setData(String data) {
+      this.data = data;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      com.datastax.oss.driver.mapper.model.inventory.Simple simple =
+          (com.datastax.oss.driver.mapper.model.inventory.Simple) o;
+      return Objects.equals(pk, simple.getPk()) && Objects.equals(data, simple.getData());
+    }
+
+    @Override
+    public int hashCode() {
+
+      return Objects.hash(pk, data);
+    }
+
+    @Override
+    public String toString() {
+      return "Simple{" + "pk=" + pk + ", data='" + data + '\'' + '}';
+    }
   }
 }

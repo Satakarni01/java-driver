@@ -52,7 +52,6 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
   private static final Pattern USING_TTL_VALUE_PATTER = Pattern.compile("(?i)USING TTL (\\d+)$");
   private static final Pattern USING_TTL_BIND_MARKER_PATTERN =
       Pattern.compile("(?i)USING TTL :(\\w+)$");
-  // todo should we support ? bindMarker
 
   public DaoUpdateMethodGenerator(
       ExecutableElement methodElement,

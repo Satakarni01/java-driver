@@ -234,12 +234,11 @@ public class RunTimeAttributesIT {
       if (this == o) {
         return true;
       }
-      if (o == null || getClass() != o.getClass()) {
+      if (!(o instanceof Simple)) {
         return false;
       }
-      com.datastax.oss.driver.mapper.model.inventory.Simple simple =
-          (com.datastax.oss.driver.mapper.model.inventory.Simple) o;
-      return Objects.equals(pk, simple.getPk()) && Objects.equals(data, simple.getData());
+      Simple simple = (Simple) o;
+      return Objects.equals(pk, simple.pk) && Objects.equals(data, simple.data);
     }
 
     @Override

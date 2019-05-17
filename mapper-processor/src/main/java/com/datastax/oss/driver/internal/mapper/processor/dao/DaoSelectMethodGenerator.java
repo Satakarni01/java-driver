@@ -97,11 +97,13 @@ public class DaoSelectMethodGenerator extends DaoMethodGenerator {
     // - otherwise, they must be an exact match for the entity's primary key
     List<? extends VariableElement> parameters = methodElement.getParameters();
     VariableElement runtTimeAttributeParam = null;
-    int lastParamIndex = methodElement.getParameters().size() - 1;
-    VariableElement potRunTimeParam = methodElement.getParameters().get(lastParamIndex);
-    if (potRunTimeParam.asType().toString().equals(RUNTIME_ATTRIBUTES_NAME)) {
-      runtTimeAttributeParam = potRunTimeParam;
-      parameters = parameters.subList(0, lastParamIndex);
+    if (methodElement.getParameters().size() > 0) {
+      int lastParamIndex = methodElement.getParameters().size() - 1;
+      VariableElement potRunTimeParam = methodElement.getParameters().get(lastParamIndex);
+      if (potRunTimeParam.asType().toString().equals(RUNTIME_ATTRIBUTES_NAME)) {
+        runtTimeAttributeParam = potRunTimeParam;
+        parameters = parameters.subList(0, lastParamIndex);
+      }
     }
     Select selectAnnotation = methodElement.getAnnotation(Select.class);
     assert selectAnnotation != null; // otherwise we wouldn't have gotten into this class

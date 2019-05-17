@@ -182,7 +182,7 @@ public class DefaultEntityFactory implements EntityFactory {
 
   private Optional<String> getCustomCqlName(ExecutableElement getMethod, VariableElement field) {
     CqlName getterAnnotation = getMethod.getAnnotation(CqlName.class);
-    CqlName fieldAnnotation = field.getAnnotation(CqlName.class);
+    CqlName fieldAnnotation = (field == null) ? null : field.getAnnotation(CqlName.class);
     if (getterAnnotation != null) {
       if (fieldAnnotation != null) {
         context

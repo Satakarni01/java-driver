@@ -109,7 +109,6 @@ public class UpdateEntityIT extends InventoryITBase {
                     "SELECT WRITETIME(description) FROM product WHERE id = ?",
                     FLAMETHROWER.getId()))
             .one();
-    assert row != null;
     long writeTime = row.getLong(0);
     assertThat(writeTime).isEqualTo(timestamp);
   }
@@ -130,7 +129,6 @@ public class UpdateEntityIT extends InventoryITBase {
                     "SELECT WRITETIME(description) FROM product WHERE id = ?",
                     FLAMETHROWER.getId()))
             .one();
-    assert row != null;
     long writeTime = row.getLong(0);
     assertThat(writeTime).isEqualTo(timestamp);
   }

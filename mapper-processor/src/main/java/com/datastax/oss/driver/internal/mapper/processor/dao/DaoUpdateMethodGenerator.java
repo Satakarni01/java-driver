@@ -102,15 +102,6 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
               Update.class.getSimpleName());
       return Optional.empty();
     }
-    if (returnType.entityElement != null && !returnType.entityElement.equals(entityElement)) {
-      context
-          .getMessager()
-          .error(
-              methodElement,
-              "Invalid return type: %s methods must return the same entity as their argument ",
-              Update.class.getSimpleName());
-      return Optional.empty();
-    }
 
     // Generate the method:
     String helperFieldName = enclosingClass.addEntityHelperField(ClassName.get(entityElement));
@@ -120,40 +111,40 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
             (methodBuilder, requestName) ->
                 generatePrepareRequest(methodBuilder, requestName, helperFieldName));
 
-    MethodSpec.Builder insertBuilder = GeneratedCodePatterns.override(methodElement);
+    MethodSpec.Builder methodBuilder = GeneratedCodePatterns.override(methodElement);
 
     if (returnType.kind.isAsync) {
-      insertBuilder.beginControlFlow("try");
+      methodBuilder.beginControlFlow("try");
     }
-    insertBuilder.addStatement(
+    methodBuilder.addStatement(
         "$T boundStatementBuilder = $L.boundStatementBuilder()",
         BoundStatementBuilder.class,
         statementName);
 
     List<? extends VariableElement> parameters = methodElement.getParameters();
     String entityParameterName = parameters.get(0).getSimpleName().toString();
-    insertBuilder.addStatement(
+    methodBuilder.addStatement(
         "$L.set($L, boundStatementBuilder)", helperFieldName, entityParameterName);
 
     // Handle all remaining parameters as additional bound values
     if (parameters.size() > 1) {
       GeneratedCodePatterns.bindParameters(
-          parameters.subList(1, parameters.size()), insertBuilder, enclosingClass, context);
+          parameters.subList(1, parameters.size()), methodBuilder, enclosingClass, context);
     }
 
-    insertBuilder
+    methodBuilder
         .addCode("\n")
         .addStatement("$T boundStatement = boundStatementBuilder.build()", BoundStatement.class);
 
-    returnType.kind.addExecuteStatement(insertBuilder, helperFieldName);
+    returnType.kind.addExecuteStatement(methodBuilder, helperFieldName);
 
     if (returnType.kind.isAsync) {
-      insertBuilder
+      methodBuilder
           .nextControlFlow("catch ($T t)", Throwable.class)
           .addStatement("return $T.failedFuture(t)", CompletableFutures.class)
           .endControlFlow();
     }
-    return Optional.of(insertBuilder.build());
+    return Optional.of(methodBuilder.build());
   }
 
   private void generatePrepareRequest(

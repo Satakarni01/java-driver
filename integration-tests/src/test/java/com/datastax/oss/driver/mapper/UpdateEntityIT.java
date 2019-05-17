@@ -56,7 +56,6 @@ public class UpdateEntityIT extends InventoryITBase {
   @ClassRule public static TestRule chain = RuleChain.outerRule(ccm).around(sessionRule);
 
   private static ProductDao dao;
-  private static OnlyPKDao onlyPKDao;
   private static InventoryMapper inventoryMapper;
 
   @BeforeClass
@@ -236,7 +235,7 @@ public class UpdateEntityIT extends InventoryITBase {
 
   @Test
   public void should_throw_when_try_to_use_dao_with_update_only_pk() {
-    assertThatThrownBy(() -> onlyPKDao = inventoryMapper.onlyPkDao(sessionRule.keyspace()))
+    assertThatThrownBy(() -> inventoryMapper.onlyPkDao(sessionRule.keyspace()))
         .hasCauseInstanceOf(UnsupportedOperationException.class)
         .hasStackTraceContaining("Entity onlyPK does not have any non PK columns.");
   }

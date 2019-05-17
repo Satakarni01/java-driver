@@ -74,5 +74,5 @@ public interface RuntimeAttributes {
 
   boolean isCustomPayloadSet();
 
-  Map<String, ByteBuffer> customPayload();
+  Map<String, ByteBuffer> getCustomPayload();
 }

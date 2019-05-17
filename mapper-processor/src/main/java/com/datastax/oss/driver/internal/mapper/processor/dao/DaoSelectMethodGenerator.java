@@ -150,7 +150,7 @@ public class DaoSelectMethodGenerator extends DaoMethodGenerator {
     if (runtTimeAttributeParam != null) {
       if (runtTimeAttributeParam != null) {
         selectBuilder.addStatement(
-            "DaoBase.populateBoundStatementWithAttributes(boundStatementBuilder,$L)",
+            "boundStatementBuilder = DaoBase.populateBoundStatementWithAttributes(boundStatementBuilder,$L)",
             runtTimeAttributeParam.getSimpleName().toString());
       }
     }

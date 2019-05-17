@@ -175,7 +175,7 @@ public class DaoQueryMethodGenerator extends DaoMethodGenerator {
     if (runtTimeAttributeParam != null) {
       if (runtTimeAttributeParam != null) {
         queryBuilder.addStatement(
-            "DaoBase.populateBoundStatementWithAttributes(boundStatementBuilder,$L)",
+            "boundStatementBuilder = DaoBase.populateBoundStatementWithAttributes(boundStatementBuilder,$L)",
             runtTimeAttributeParam.getSimpleName().toString());
       }
     }

@@ -177,7 +177,7 @@ public class DaoDeleteMethodGenerator extends DaoMethodGenerator {
     if (runtTimeAttributeParam != null) {
       if (runtTimeAttributeParam != null) {
         deleteBuilder.addStatement(
-            "DaoBase.populateBoundStatementWithAttributes(boundStatementBuilder,$L)",
+            "boundStatementBuilder = DaoBase.populateBoundStatementWithAttributes(boundStatementBuilder,$L)",
             runtTimeAttributeParam.getSimpleName().toString());
       }
     }

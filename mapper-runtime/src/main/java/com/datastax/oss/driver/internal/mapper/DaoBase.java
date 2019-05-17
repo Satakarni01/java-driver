@@ -115,52 +115,57 @@ public class DaoBase {
     return SimpleStatement.newInstance(queryString);
   }
 
-  public static void populateBoundStatementWithAttributes(
+  public static BoundStatementBuilder populateBoundStatementWithAttributes(
       BoundStatementBuilder builder, RuntimeAttributes attributes) {
     if (attributes.isExecutionProfileSet()) {
-      builder.setExecutionProfile(attributes.getExecutionProfile());
+      builder = builder.setExecutionProfile(attributes.getExecutionProfile());
     }
     if (attributes.isConsistencyLevelSet()) {
-      builder.setSerialConsistencyLevel(attributes.getSerialConsistencyLevel());
+      builder = builder.setConsistencyLevel(attributes.getConstencyLevel());
     }
     if (attributes.isSerialConsistencyLevelSet()) {
-      builder.setSerialConsistencyLevel(attributes.getSerialConsistencyLevel());
+      builder = builder.setSerialConsistencyLevel(attributes.getSerialConsistencyLevel());
     }
     if (attributes.isIdempotentSet()) {
-      builder.setIdempotence(attributes.isIdempotent());
+      builder = builder.setIdempotence(attributes.isIdempotent());
     }
     if (attributes.isPageSizeSet()) {
-      builder.setPageSize(attributes.getPageSize());
+      builder = builder.setPageSize(attributes.getPageSize());
     }
     if (attributes.isTimeoutSet()) {
-      builder.setTimeout(attributes.getTimeout());
+      builder = builder.setTimeout(attributes.getTimeout());
     }
     if (attributes.isRoutingKeySet()) {
-      builder.setRoutingKey(attributes.getRoutingKey());
+      builder = builder.setRoutingKey(attributes.getRoutingKey());
     }
     if (attributes.isRoutingKeyspaceSet()) {
-      builder.setRoutingKeyspace(attributes.getRoutingKeyspace());
+      builder = builder.setRoutingKeyspace(attributes.getRoutingKeyspace());
     }
     if (attributes.isTracingSet()) {
       if (attributes.isTracing()) {
-        builder.setTracing();
+        builder = builder.setTracing();
       }
     }
     if (attributes.isPagingStateSet()) {
-      builder.setPagingState(attributes.getPagingState());
+      builder = builder.setPagingState(attributes.getPagingState());
     }
     if (attributes.isTimeoutSet()) {
-      builder.setTimeout(attributes.getTimeout());
+      builder = builder.setTimeout(attributes.getTimeout());
     }
     if (attributes.isTimeStampSet()) {
-      builder.setQueryTimestamp(attributes.getTimestamp());
+      builder = builder.setQueryTimestamp(attributes.getTimestamp());
     }
     if (attributes.isNodeSet()) {
-      builder.setNode(attributes.getNode());
+      builder = builder.setNode(attributes.getNode());
     }
     if (attributes.isCustomPayloadSet()) {
-      attributes.isCustomPayloadSet();
+      for (String customPayloadKey : attributes.getCustomPayload().keySet()) {
+        builder =
+            builder.addCustomPayload(
+                customPayloadKey, attributes.getCustomPayload().get(customPayloadKey));
+      }
     }
+    return builder;
   }
 
   protected final MapperContext context;

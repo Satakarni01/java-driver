@@ -184,7 +184,7 @@ public class DefaultRunTimeAttributes implements RuntimeAttributes {
   }
 
   @Override
-  public Map<String, ByteBuffer> customPayload() {
+  public Map<String, ByteBuffer> getCustomPayload() {
     return customPayload;
   }
 

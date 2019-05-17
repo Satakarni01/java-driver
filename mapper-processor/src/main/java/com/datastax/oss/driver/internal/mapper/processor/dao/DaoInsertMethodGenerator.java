@@ -137,7 +137,7 @@ public class DaoInsertMethodGenerator extends DaoMethodGenerator {
       parameters = parameters.subList(0, lastParamIndex);
       if (runtTimeAttributeParam != null) {
         insertBuilder.addStatement(
-            "DaoBase.populateBoundStatementWithAttributes(boundStatementBuilder,$L)",
+            "boundStatementBuilder = DaoBase.populateBoundStatementWithAttributes(boundStatementBuilder,$L)",
             runtTimeAttributeParam.getSimpleName().toString());
       }
     }

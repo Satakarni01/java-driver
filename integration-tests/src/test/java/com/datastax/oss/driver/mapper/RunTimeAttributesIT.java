@@ -1,0 +1,173 @@
+/*
+ * Copyright DataStax, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.datastax.oss.driver.mapper;
+
+import static com.datastax.oss.simulacron.common.stubbing.PrimeDsl.noRows;
+import static com.datastax.oss.simulacron.common.stubbing.PrimeDsl.query;
+import static com.datastax.oss.simulacron.common.stubbing.PrimeDsl.when;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.DefaultConsistencyLevel;
+import com.datastax.oss.driver.api.mapper.DefaultRunTimeAttributes;
+import com.datastax.oss.driver.api.mapper.DefaultRunTimeAttributesBuilder;
+import com.datastax.oss.driver.api.mapper.RuntimeAttributes;
+import com.datastax.oss.driver.api.testinfra.session.SessionRule;
+import com.datastax.oss.driver.api.testinfra.session.SessionUtils;
+import com.datastax.oss.driver.api.testinfra.simulacron.SimulacronRule;
+import com.datastax.oss.driver.mapper.model.inventory.InventoryMapper;
+import com.datastax.oss.driver.mapper.model.inventory.InventoryMapperBuilder;
+import com.datastax.oss.driver.mapper.model.inventory.Simple;
+import com.datastax.oss.driver.mapper.model.inventory.SimpleDao;
+import com.datastax.oss.protocol.internal.Message;
+import com.datastax.oss.protocol.internal.request.Execute;
+import com.datastax.oss.simulacron.common.cluster.ClusterQueryLogReport;
+import com.datastax.oss.simulacron.common.cluster.ClusterSpec;
+import com.datastax.oss.simulacron.common.cluster.QueryLog;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+
+public class RunTimeAttributesIT {
+
+  @ClassRule
+  public static SimulacronRule simulacronRule =
+      new SimulacronRule(ClusterSpec.builder().withNodes(1));
+
+  private static SessionRule<CqlSession> sessionRule = SessionRule.builder(simulacronRule).build();
+
+  private static SimpleDao simpleDao;
+
+  private static Simple simple = new Simple(UUID.randomUUID(), "DATA");
+  private static String PAGING_STATE = "paging_state";
+  private static int PAGE_SIZE = 13;
+
+  @Before
+  public void setup() {
+    simulacronRule.cluster().clearPrimes(true);
+    simulacronRule.cluster().clearLogs();
+  }
+
+  @Test
+  public void should_honor_runtime_attributes_insert() {
+    Map<String, Object> params = ImmutableMap.of("pk", simple.getPk(), "data", simple.getData());
+    Map<String, String> paramTypes = ImmutableMap.of("pk", "uuid", "data", "ascii");
+    simulacronRule
+        .cluster()
+        .prime(
+            when(query(
+                    "INSERT INTO simple (pk,data) VALUES (:pk,:data)",
+                    Lists.newArrayList(
+                        com.datastax.oss.simulacron.common.codec.ConsistencyLevel.ONE,
+                        com.datastax.oss.simulacron.common.codec.ConsistencyLevel.ANY),
+                    params,
+                    paramTypes))
+                .then(noRows()));
+    CqlSession session = SessionUtils.newSession(simulacronRule);
+    InventoryMapper inventoryMapper = new InventoryMapperBuilder(session).build();
+    simpleDao = inventoryMapper.simpleDao(sessionRule.keyspace());
+    RuntimeAttributes attributes = buildRunTimeAttributes();
+    simulacronRule.cluster().clearLogs();
+    simpleDao.save(simple, attributes);
+    ClusterQueryLogReport report = simulacronRule.cluster().getLogs();
+    validateQueryOptions(report.getQueryLogs().get(0));
+  }
+
+  @Test
+  public void should_honor_runtime_attributes_delete() {
+    Map<String, Object> params = ImmutableMap.of("pk", simple.getPk());
+    Map<String, String> paramTypes = ImmutableMap.of("pk", "uuid");
+    simulacronRule
+        .cluster()
+        .prime(
+            when(query(
+                    "DELETE FROM simple WHERE pk=:pk",
+                    Lists.newArrayList(
+                        com.datastax.oss.simulacron.common.codec.ConsistencyLevel.ONE,
+                        com.datastax.oss.simulacron.common.codec.ConsistencyLevel.ANY),
+                    params,
+                    paramTypes))
+                .then(noRows())
+                .delay(1, TimeUnit.MILLISECONDS));
+    CqlSession session = SessionUtils.newSession(simulacronRule);
+    InventoryMapper inventoryMapper = new InventoryMapperBuilder(session).build();
+    simpleDao = inventoryMapper.simpleDao(sessionRule.keyspace());
+    RuntimeAttributes attributes = buildRunTimeAttributes();
+    simulacronRule.cluster().clearLogs();
+    simpleDao.delete(simple, attributes);
+    ClusterQueryLogReport report = simulacronRule.cluster().getLogs();
+    validateQueryOptions(report.getQueryLogs().get(0));
+  }
+
+  @Test
+  public void should_honor_runtime_attributes_select() {
+    Map<String, Object> params = ImmutableMap.of("pk", simple.getPk());
+    Map<String, String> paramTypes = ImmutableMap.of("pk", "uuid");
+    simulacronRule
+        .cluster()
+        .prime(
+            when(query(
+                    "SELECT pk,data FROM simple WHERE pk=:pk",
+                    Lists.newArrayList(
+                        com.datastax.oss.simulacron.common.codec.ConsistencyLevel.ONE,
+                        com.datastax.oss.simulacron.common.codec.ConsistencyLevel.ANY),
+                    params,
+                    paramTypes))
+                .then(noRows())
+                .delay(1, TimeUnit.MILLISECONDS));
+    CqlSession session = SessionUtils.newSession(simulacronRule);
+    InventoryMapper inventoryMapper = new InventoryMapperBuilder(session).build();
+    simpleDao = inventoryMapper.simpleDao(sessionRule.keyspace());
+
+    RuntimeAttributes attributes = buildRunTimeAttributes();
+    simulacronRule.cluster().clearLogs();
+    simpleDao.findByPk(simple.getPk(), attributes);
+    ClusterQueryLogReport report = simulacronRule.cluster().getLogs();
+    validateQueryOptions(report.getQueryLogs().get(0));
+  }
+
+  private RuntimeAttributes buildRunTimeAttributes() {
+    DefaultRunTimeAttributesBuilder builder = DefaultRunTimeAttributes.builder();
+
+    return builder
+        .withConsistencyLevel(DefaultConsistencyLevel.ANY)
+        .withPageSize(PAGE_SIZE)
+        .withSerialConsistencyLevel(DefaultConsistencyLevel.QUORUM)
+        .withPagingState(ByteBuffer.wrap(PAGING_STATE.getBytes(UTF_8)))
+        .build();
+  }
+
+  private void validateQueryOptions(QueryLog log) {
+
+    Message message = log.getFrame().message;
+    assertThat(message).isInstanceOf(Execute.class);
+    Execute queryExecute = (Execute) message;
+    assertThat(queryExecute.options.consistency)
+        .isEqualTo(DefaultConsistencyLevel.ANY.getProtocolCode());
+    assertThat(queryExecute.options.serialConsistency)
+        .isEqualTo(DefaultConsistencyLevel.QUORUM.getProtocolCode());
+    assertThat(queryExecute.options.pageSize).isEqualTo(PAGE_SIZE);
+    String pagingState = UTF_8.decode(queryExecute.options.pagingState).toString();
+    assertThat(pagingState).isEqualTo(PAGING_STATE);
+  }
+}

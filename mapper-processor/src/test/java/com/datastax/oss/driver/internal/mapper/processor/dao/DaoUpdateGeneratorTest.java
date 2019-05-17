@@ -68,14 +68,14 @@ public class DaoUpdateGeneratorTest extends DaoMethodGeneratorTest {
             .build(),
       },
       {
-        "You cannot specify both ifExists(true) and ifCondition(1 = 1) for Update method.",
+        "Invalid annotation parameters: Update cannot have both ifExists and customIfClause",
         MethodSpec.methodBuilder("update")
             .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
             .addAnnotation(
                 AnnotationSpec.builder(Update.class)
                     .addMember("whereClause", "$S", "id = :id")
                     .addMember("ifExists", "true")
-                    .addMember("ifCondition", "$S", "1 = 1")
+                    .addMember("customIfClause", "$S", "1 = 1")
                     .build())
             .addParameter(ParameterSpec.builder(ENTITY_CLASS_NAME, "entity").build())
             .returns(TypeName.VOID)

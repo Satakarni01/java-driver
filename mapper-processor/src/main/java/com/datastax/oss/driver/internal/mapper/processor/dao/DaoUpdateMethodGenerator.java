@@ -28,7 +28,6 @@ import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.datastax.oss.driver.internal.mapper.processor.ProcessorContext;
 import com.datastax.oss.driver.internal.mapper.processor.util.generation.GeneratedCodePatterns;
-import com.datastax.oss.driver.internal.querybuilder.DefaultRaw;
 import com.datastax.oss.driver.internal.querybuilder.update.DefaultUpdate;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.squareup.javapoet.ClassName;
@@ -162,7 +161,6 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
     methodBuilder.addCode(".where($1T.raw($2S))", QueryBuilder.class, whereClause);
 
     maybeAddIfClause(methodBuilder, annotation);
-    methodBuilder.addCode(".asCql()");
 
     methodBuilder.addCode(")$];\n");
   }
@@ -210,23 +208,21 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
   }
 
   private void maybeAddIfClause(MethodSpec.Builder methodBuilder, Update annotation) {
-    if (annotation.ifExists() && !annotation.ifCondition().isEmpty()) {
+    if (annotation.ifExists() && !annotation.customIfClause().isEmpty()) {
       context
           .getMessager()
           .error(
               methodElement,
-              "You cannot specify both ifExists(%s) and ifCondition(%s) for %s method.",
-              annotation.ifExists(),
-              annotation.ifCondition(),
+              "Invalid annotation parameters: %s cannot have both ifExists and customIfClause",
               Update.class.getSimpleName());
     }
 
     if (annotation.ifExists()) {
-      methodBuilder.addCode(".ifExists()");
-    }
-
-    if (!annotation.ifCondition().isEmpty()) {
-      methodBuilder.addCode(".if_(new $1T($2S))", DefaultRaw.class, annotation.ifCondition());
+      methodBuilder.addCode(".ifExists()").addCode(".asCql()");
+    } else if (!annotation.customIfClause().isEmpty()) {
+      methodBuilder.addCode(".asCql() + $S", " " + annotation.customIfClause());
+    } else {
+      methodBuilder.addCode(".asCql()");
     }
   }
 }

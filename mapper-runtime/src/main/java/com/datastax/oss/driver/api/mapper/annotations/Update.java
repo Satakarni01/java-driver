@@ -26,7 +26,7 @@ public @interface Update {
 
   boolean ifExists() default false;
 
-  String ifCondition() default "";
+  String customIfClause() default "";
 
   String whereClause();
 

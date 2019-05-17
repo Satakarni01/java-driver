@@ -264,10 +264,10 @@ public class UpdateEntityIT extends InventoryITBase {
     @Update(whereClause = "id = :id")
     CompletableFuture<Void> updateAsync(Product product);
 
-    @Update(whereClause = "id = :id", ifCondition = "dimensions.length = :length")
+    @Update(whereClause = "id = :id", customIfClause = "IF dimensions.length = :length")
     ResultSet updateIfLength(Product product, int length);
 
-    @Update(whereClause = "id = :id", ifCondition = "dimensions.length = :length")
+    @Update(whereClause = "id = :id", customIfClause = "IF dimensions.length = :length")
     CompletableFuture<AsyncResultSet> updateIfLengthAsync(Product product, int length);
 
     @Update(whereClause = "id = :id", customUsingClause = "USING TIMESTAMP :timestamp")

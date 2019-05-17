@@ -57,6 +57,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Period;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -266,6 +267,26 @@ public class CachingCodecRegistryTest {
   }
 
   @Test
+  public void should_create_list_codec_for_cql_type_and_empty_java_value() {
+    ListType cqlType = DataTypes.listOf(DataTypes.listOf(DataTypes.INT));
+    List<List<Integer>> value = Collections.emptyList();
+
+    TestCachingCodecRegistry registry = new TestCachingCodecRegistry(mockCache);
+    InOrder inOrder = inOrder(mockCache);
+
+    TypeCodec<List<List<Integer>>> codec = registry.codecFor(cqlType, value);
+    assertThat(codec).isNotNull();
+    assertThat(codec.accepts(value)).isTrue();
+
+    // Note that empty collections are a corner case, in that the registry returns a codec that does
+    // not accept cqlType, nor the value's declared Java type.
+    // The only requirement is that it can encode the value, which holds true:
+    codec.encode(value, ProtocolVersion.DEFAULT);
+
+    inOrder.verify(mockCache).lookup(null, GenericType.listOf(GenericType.BOOLEAN), false);
+  }
+
+  @Test
   public void should_create_list_codec_for_java_value() {
     ListType cqlType = DataTypes.listOf(DataTypes.listOf(DataTypes.INT));
     GenericType<List<List<Integer>>> javaType = new GenericType<List<List<Integer>>>() {};
@@ -281,6 +302,25 @@ public class CachingCodecRegistryTest {
     assertThat(codec.accepts(value)).isTrue();
     inOrder.verify(mockCache).lookup(null, javaType, true);
     inOrder.verify(mockCache).lookup(null, GenericType.listOf(GenericType.INTEGER), true);
+  }
+
+  @Test
+  public void should_create_list_codec_for_empty_java_value() {
+    List<List<Integer>> value = Collections.emptyList();
+
+    TestCachingCodecRegistry registry = new TestCachingCodecRegistry(mockCache);
+    InOrder inOrder = inOrder(mockCache);
+
+    TypeCodec<List<List<Integer>>> codec = registry.codecFor(value);
+    assertThat(codec).isNotNull();
+    assertThat(codec.accepts(value)).isTrue();
+
+    // Note that empty collections are a corner case, in that the registry returns a codec that does
+    // not accept cqlType, nor the value's declared Java type.
+    // The only requirement is that it can encode the value, which holds true:
+    codec.encode(value, ProtocolVersion.DEFAULT);
+
+    inOrder.verify(mockCache).lookup(null, GenericType.listOf(Boolean.class), true);
   }
 
   @Test
@@ -366,6 +406,26 @@ public class CachingCodecRegistryTest {
   }
 
   @Test
+  public void should_create_set_codec_for_cql_type_and_empty_java_value() {
+    SetType cqlType = DataTypes.setOf(DataTypes.setOf(DataTypes.INT));
+    Set<Set<Integer>> value = Collections.emptySet();
+
+    TestCachingCodecRegistry registry = new TestCachingCodecRegistry(mockCache);
+    InOrder inOrder = inOrder(mockCache);
+
+    TypeCodec<Set<Set<Integer>>> codec = registry.codecFor(cqlType, value);
+    assertThat(codec).isNotNull();
+    assertThat(codec.accepts(value)).isTrue();
+
+    // Note that empty collections are a corner case, in that the registry returns a codec that does
+    // not accept cqlType, nor the value's declared Java type.
+    // The only requirement is that it can encode the value, which holds true:
+    codec.encode(value, ProtocolVersion.DEFAULT);
+
+    inOrder.verify(mockCache).lookup(null, GenericType.setOf(GenericType.BOOLEAN), false);
+  }
+
+  @Test
   public void should_create_set_codec_for_java_value() {
     SetType cqlType = DataTypes.setOf(DataTypes.setOf(DataTypes.INT));
     GenericType<Set<Set<Integer>>> javaType = new GenericType<Set<Set<Integer>>>() {};
@@ -381,6 +441,25 @@ public class CachingCodecRegistryTest {
     assertThat(codec.accepts(value)).isTrue();
     inOrder.verify(mockCache).lookup(null, javaType, true);
     inOrder.verify(mockCache).lookup(null, GenericType.setOf(GenericType.INTEGER), true);
+  }
+
+  @Test
+  public void should_create_set_codec_for_empty_java_value() {
+    Set<Set<Integer>> value = Collections.emptySet();
+
+    TestCachingCodecRegistry registry = new TestCachingCodecRegistry(mockCache);
+    InOrder inOrder = inOrder(mockCache);
+
+    TypeCodec<Set<Set<Integer>>> codec = registry.codecFor(value);
+    assertThat(codec).isNotNull();
+    assertThat(codec.accepts(value)).isTrue();
+
+    // Note that empty collections are a corner case, in that the registry returns a codec that does
+    // not accept cqlType, nor the value's declared Java type.
+    // The only requirement is that it can encode the value, which holds true:
+    codec.encode(value, ProtocolVersion.DEFAULT);
+
+    inOrder.verify(mockCache).lookup(null, GenericType.setOf(Boolean.class), true);
   }
 
   @Test
@@ -494,6 +573,28 @@ public class CachingCodecRegistryTest {
   }
 
   @Test
+  public void should_create_map_codec_for_cql_type_and_empty_java_value() {
+    MapType cqlType = DataTypes.mapOf(DataTypes.INT, DataTypes.TEXT);
+    Map<Integer, String> value = Collections.emptyMap();
+
+    TestCachingCodecRegistry registry = new TestCachingCodecRegistry(mockCache);
+    InOrder inOrder = inOrder(mockCache);
+
+    TypeCodec<Map<Integer, String>> codec = registry.codecFor(cqlType, value);
+    assertThat(codec).isNotNull();
+    assertThat(codec.accepts(value)).isTrue();
+
+    // Note that empty collections are a corner case, in that the registry returns a codec that does
+    // not accept cqlType, nor the value's declared Java type.
+    // The only requirement is that it can encode the value, which holds true:
+    codec.encode(value, ProtocolVersion.DEFAULT);
+
+    inOrder
+        .verify(mockCache)
+        .lookup(null, GenericType.mapOf(GenericType.BOOLEAN, GenericType.BOOLEAN), false);
+  }
+
+  @Test
   public void should_create_map_codec_for_java_value() {
     MapType cqlType = DataTypes.mapOf(DataTypes.INT, DataTypes.mapOf(DataTypes.INT, DataTypes.INT));
     GenericType<Map<Integer, Map<Integer, Integer>>> javaType =
@@ -512,6 +613,27 @@ public class CachingCodecRegistryTest {
     inOrder
         .verify(mockCache)
         .lookup(null, GenericType.mapOf(GenericType.INTEGER, GenericType.INTEGER), true);
+  }
+
+  @Test
+  public void should_create_map_codec_for_empty_java_value() {
+    Map<Integer, String> value = Collections.emptyMap();
+
+    TestCachingCodecRegistry registry = new TestCachingCodecRegistry(mockCache);
+    InOrder inOrder = inOrder(mockCache);
+
+    TypeCodec<Map<Integer, String>> codec = registry.codecFor(value);
+    assertThat(codec).isNotNull();
+    assertThat(codec.accepts(value)).isTrue();
+
+    // Note that empty collections are a corner case, in that the registry returns a codec that does
+    // not accept cqlType, nor the value's declared Java type.
+    // The only requirement is that it can encode the value, which holds true:
+    codec.encode(value, ProtocolVersion.DEFAULT);
+
+    inOrder
+        .verify(mockCache)
+        .lookup(null, GenericType.mapOf(GenericType.BOOLEAN, GenericType.BOOLEAN), true);
   }
 
   @Test

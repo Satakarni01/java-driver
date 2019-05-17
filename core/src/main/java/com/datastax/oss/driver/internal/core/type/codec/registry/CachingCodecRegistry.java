@@ -157,6 +157,16 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
     Preconditions.checkNotNull(value);
     LOG.trace("[{}] Looking up codec for CQL type {} and object {}", logPrefix, cqlType, value);
 
+    // Special case for empty collections: inspectType won't work because we have nothing to infer
+    // the element type (it will return a dummy element type that doesn't match cqlType).
+    if (value instanceof List && ((List) value).isEmpty()) {
+      return uncheckedCast(codecFor(JAVA_TYPE_FOR_EMPTY_LISTS));
+    } else if (value instanceof Set && ((Set) value).isEmpty()) {
+      return uncheckedCast(codecFor(JAVA_TYPE_FOR_EMPTY_SETS));
+    } else if (value instanceof Map && ((Map) value).isEmpty()) {
+      return uncheckedCast(codecFor(JAVA_TYPE_FOR_EMPTY_MAPS));
+    }
+
     TypeCodec<?> primitiveCodec = primitiveCodecsByCode.get(cqlType.getProtocolCode());
     if (primitiveCodec != null && primitiveCodec.accepts(value)) {
       LOG.trace("[{}] Found matching primitive codec {}", logPrefix, primitiveCodec);
@@ -250,7 +260,7 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
       List<?> list = (List) value;
       if (list.isEmpty()) {
         // The empty list is always encoded the same way, so any element type will do
-        return GenericType.listOf(Boolean.class);
+        return JAVA_TYPE_FOR_EMPTY_LISTS;
       } else {
         GenericType<?> elementType = inspectType(list.get(0));
         return GenericType.listOf(elementType);
@@ -258,7 +268,7 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
     } else if (value instanceof Set) {
       Set<?> set = (Set) value;
       if (set.isEmpty()) {
-        return GenericType.setOf(Boolean.class);
+        return JAVA_TYPE_FOR_EMPTY_SETS;
       } else {
         GenericType<?> elementType = inspectType(set.iterator().next());
         return GenericType.setOf(elementType);
@@ -266,7 +276,7 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
     } else if (value instanceof Map) {
       Map<?, ?> map = (Map) value;
       if (map.isEmpty()) {
-        return GenericType.mapOf(Boolean.class, Boolean.class);
+        return JAVA_TYPE_FOR_EMPTY_MAPS;
       } else {
         Map.Entry<?, ?> entry = map.entrySet().iterator().next();
         GenericType<?> keyType = inspectType(entry.getKey());
@@ -413,4 +423,14 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
     TypeCodec<DeclaredT> result = (TypeCodec<DeclaredT>) codec;
     return result;
   }
+
+  // These are mock types that are used as placeholders when we try to find a codec for an empty
+  // Java collection instance. All empty collections are serialized in the same way, so any element
+  // type will do:
+  private static final GenericType<List<Boolean>> JAVA_TYPE_FOR_EMPTY_LISTS =
+      GenericType.listOf(Boolean.class);
+  private static final GenericType<Set<Boolean>> JAVA_TYPE_FOR_EMPTY_SETS =
+      GenericType.setOf(Boolean.class);
+  private static final GenericType<Map<Boolean, Boolean>> JAVA_TYPE_FOR_EMPTY_MAPS =
+      GenericType.mapOf(Boolean.class, Boolean.class);
 }

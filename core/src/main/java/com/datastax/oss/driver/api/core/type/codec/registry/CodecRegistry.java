@@ -141,6 +141,9 @@ public interface CodecRegistry {
    * a runtime type of {@code ArrayList<String>}, it should be possible to encode it with a codec
    * that accepts a {@code List<String>}.
    *
+   * <p>Note that, if {@code value} is an empty collection, this method will return a codec that
+   * won't accept {@code cqlType} or {@code JavaTypeT}; but it will encode {@code value} correctly.
+   *
    * @throws CodecNotFoundException if there is no such codec.
    */
   @NonNull
@@ -160,6 +163,9 @@ public interface CodecRegistry {
    * is always used in encoding scenarios; if a simple statement has a value with a runtime type of
    * {@code ArrayList<String>}, it should be possible to encode it with a codec that accepts a
    * {@code List<String>}.
+   *
+   * <p>Note that, if {@code value} is an empty collection, this method will return a codec that
+   * won't accept {@code JavaTypeT}; but it will encode {@code value} correctly.
    *
    * @throws CodecNotFoundException if there is no such codec.
    */

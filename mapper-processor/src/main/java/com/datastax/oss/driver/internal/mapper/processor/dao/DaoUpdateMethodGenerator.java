@@ -87,7 +87,7 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
           .getMessager()
           .error(
               methodElement,
-              "Invalid return type: %s methods must return either void or the entity class "
+              "Invalid return type: %s methods must return either void, ResultSet or boolean "
                   + "(possibly wrapped in a CompletionStage/CompletableFuture)",
               Update.class.getSimpleName());
       return Optional.empty();

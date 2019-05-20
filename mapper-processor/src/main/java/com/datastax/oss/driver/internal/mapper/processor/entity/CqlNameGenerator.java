@@ -17,7 +17,6 @@ package com.datastax.oss.driver.internal.mapper.processor.entity;
 
 import com.datastax.oss.driver.api.mapper.annotations.NamingStrategy;
 import com.datastax.oss.driver.api.mapper.entity.naming.NamingConvention;
-import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import com.squareup.javapoet.CodeBlock;
 import javax.lang.model.type.TypeMirror;
 
@@ -57,7 +56,7 @@ public class CqlNameGenerator {
   }
 
   private CqlNameGenerator(NamingConvention namingConvention, TypeMirror converterClassMirror) {
-    Preconditions.checkArgument(namingConvention == null ^ converterClassMirror == null);
+    assert namingConvention == null ^ converterClassMirror == null;
     this.namingConvention = namingConvention;
     this.converterClassMirror = converterClassMirror;
   }

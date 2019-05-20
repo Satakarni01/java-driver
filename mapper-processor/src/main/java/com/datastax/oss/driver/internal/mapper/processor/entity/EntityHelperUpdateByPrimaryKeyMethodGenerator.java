@@ -24,11 +24,11 @@ import com.squareup.javapoet.MethodSpec;
 import java.util.Optional;
 import javax.lang.model.element.Modifier;
 
-public class EntityHelperUpdateWhereByPrimaryKeyMethodGenerator implements MethodGenerator {
+public class EntityHelperUpdateByPrimaryKeyMethodGenerator implements MethodGenerator {
 
   private final EntityDefinition entityDefinition;
 
-  EntityHelperUpdateWhereByPrimaryKeyMethodGenerator(
+  EntityHelperUpdateByPrimaryKeyMethodGenerator(
       EntityDefinition entityDefinition,
       EntityHelperGenerator enclosingClass,
       ProcessorContext context) {
@@ -38,7 +38,7 @@ public class EntityHelperUpdateWhereByPrimaryKeyMethodGenerator implements Metho
   @Override
   public Optional<MethodSpec> generate() {
     MethodSpec.Builder methodBuilder =
-        MethodSpec.methodBuilder("updateWhereByPrimaryKey")
+        MethodSpec.methodBuilder("updateByPrimaryKey")
             .addAnnotation(Override.class)
             .addModifiers(Modifier.PUBLIC)
             .returns(DefaultUpdate.class)

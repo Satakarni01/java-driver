@@ -110,9 +110,9 @@ public interface EntityHelper<EntityT> {
   /**
    * Builds the beginning of a Update query to update an entity.
    *
-   * <p>This is the same as {@link #updateWhereByPrimaryKey()} ()}, but without the {@code WHERE}
-   * clause. This would typically not be executed as-is, but instead completed with a custom {@code
-   * WHERE} clause (either added with the query builder DSL, or concatenated to the built query).
+   * <p>This is the same as {@link #updateByPrimaryKey()} ()}, but without the {@code WHERE} clause.
+   * This would typically not be executed as-is, but instead completed with a custom {@code WHERE}
+   * clause (either added with the query builder DSL, or concatenated to the built query).
    */
   Update updateStart();
 
@@ -124,11 +124,14 @@ public interface EntityHelper<EntityT> {
    *
    * <pre>{@code
    * QueryBuilder.update(keyspaceId, tableId)
-   *    .where(Relation.column("id").isEqualTo(QueryBuilder.bindMarker("id"))
-   *   ...
+   *     .setColumn("description", QueryBuilder.bindMarker("description"))
+   *     ... // (other non-PK columns)
+   *     .where(Relation.column("id").isEqualTo(QueryBuilder.bindMarker("id"))
+   *     ... // (other PK columns)
    * }</pre>
    *
-   * All mapped properties of the entity are included in the result set.
+   * All non-PK properties of the entity are set, with bind markers that have the same names as the
+   * columns.
    *
    * <p>All components of the primary key are listed in the {@code WHERE} clause as bindable values
    * (the bind markers have the same names as the columns). They are listed in the natural order,
@@ -139,7 +142,7 @@ public interface EntityHelper<EntityT> {
    * if the DAO was built without a specific keyspace and table, the query doesn't specify a
    * keyspace, and the table name is inferred from the naming strategy.
    */
-  Update updateWhereByPrimaryKey();
+  Update updateByPrimaryKey();
 
   /**
    * Builds a select query to fetch an instance of the entity by primary key (partition key +

@@ -1,6 +1,7 @@
 ## Update methods
 
-Annotate a DAO method with [@Update] to generate a query that upate an [Entity](../../entities):
+Annotate a DAO method with [@Update] to generate a query that updates one or more
+[entities](../../entities):
 
 ```java
 @Dao
@@ -12,29 +13,30 @@ public interface ProductDao {
 
 ### Parameters
 
-The first parameter must be the entity to update.
+The first parameter must be an entity instance. All of its non-PK properties will be interpreted as
+values to update.
 
-If the annotation doesn't have a `customWhereClause`, the mapper defaults to a where by primary
-key (partition key + clustering columns). The method's parameters must match the types of the
-[primary key columns](../../entities/#primary-key-columns), in the exact order (as defined by the
-[@PartitionKey] and [@ClusteringColumn] annotations). The parameter names don't necessarily need to
-match the names of the columns.
+* If the annotation doesn't have a `customWhereClause`, the mapper defaults to an update by primary
+  key (partition key + clustering columns). The WHERE clause is generated automatically, and bound
+  with the PK components of the provided entity instance. The query will update at most one row.
+  
+* If the annotation has a `customWhereClause`, it completely replaces the WHERE clause. If the
+  provided string contains placeholders, the method must have corresponding additional parameters
+  (same name, and a compatible Java type):
 
-If the annotation has a `customWhereClause`, it completely replaces the WHERE clause. The provided
-string can contain named placeholders. In that case, the method must have a corresponding parameter
-for each, with the same name and a compatible Java type.
+    ```java
+    @Update(customWhereClause = "description LIKE :searchString")
+    void updateIfDescriptionMatches(Product product, String searchString);
+    ```
+    
+    The PK components of the provided entity are ignored. Multiple rows may be updated.
 
-```java
-@Update(customWhereClause = "description LIKE :description")
-boolean updateByDescription(Product product, String description);
-```
-
-If the query has a custom timestamp or ttl with placeholders, the method must have corresponding additional
-parameters (same name, and a compatible Java type):
+If the query has a custom timestamp or TTL with placeholders, the method must have corresponding
+additional parameters (same name, and a compatible Java type):
 
 ```java
 @Update(timestamp = ":timestamp")
-void updateWithTimestamp(Product product, int timestamp);
+void updateWithTimestamp(Product product, long timestamp);
 
 @Update(ttl = ":ttl")
 void updateWithTtl(Product product, int ttl);
@@ -45,19 +47,16 @@ the method must have corresponding parameters (same name, and a compatible Java 
 
 ```java
 @Update(customIfClause = "description = :expectedDescription")
-void updateIfDescriptionMatches(Product product, String expectedDescription);
+ResultSet updateIfDescriptionMatches(Product product, String expectedDescription);
 ```
 
-An optional IF EXISTS clause at the end of the generated UPDATE query.
-
-This is mutually exclusive with customIfClause (if both are set, the mapper processor will generate a compile-time error):
-
+An optional IF EXISTS clause at the end of the generated UPDATE query. This is mutually exclusive
+with customIfClause (if both are set, the mapper processor will generate a compile-time error):
 
 ```java
 @Update(ifExists = true)
-void updateIfExists(Product product);
+boolean updateIfExists(Product product);
 ```
-
 
 
 ### Return type
@@ -66,35 +65,37 @@ The method can return:
 
 * `void`.
 
-* the [ResultSet] - returns the raw query result, without any conversion.
-  Useful for queries that use customIfClause or ifExists.
-  The status of the update operation can be retrieved via wasApplied() method
-   ```java
-   @Update(ifExists = true)
-   ResultSet updateIfExists(Product product);
-   ```
-
-* a [Boolean] - when you are not interested in retrieving the whole ResultSet but only wasApply
-  result. The [ResultSet] will be automatically mapped to Boolean.
+* a `boolean` or [Boolean], which will be mapped to `ResultSet#wasApplied()`. This is intended for
+  conditional queries.
   
-  ```java
-  @Update(ifExists = true)
-  boolean updateReturnWasApplied(Product product);
-  ```
+    ```java
+    @Update(ifExists = true)
+    boolean updateIfExists(Product product);
+    ```
     
+* a [ResultSet]. The method will return the raw query result, without any conversion. This is
+  intended for queries with custom IF clauses; when those queries are not applied, they return the
+  actual values of the tested columns.
+  
+    ```java
+    @Update(customIfClause = "description = :expectedDescription")
+    ResultSet updateIfExists(Product product);
+    // if the condition fails, the result set will contain columns '[applied]' and 'description'
+    ```
+
 * a [CompletionStage] or [CompletableFuture] of any of the above. The mapper will execute the query
   asynchronously. 
-  Note that for result set, you need to switch to the asynchronous equivalent [AsyncResultSet]
+  Note that for result sets, you need to switch to the asynchronous equivalent [AsyncResultSet].
 
     ```java
     @Update
     CompletionStage<Void> update(Product product);
 
     @Update(ifExists = true)
-    CompletableFuture<AsyncResultSet> updateIfExists(Product product);
-
-    @Update(ifExists = true)
     CompletableFuture<Boolean> updateIfExists(Product product);
+
+    @Update(customIfClause = "description = :expectedDescription")
+    CompletableFuture<AsyncResultSet> updateIfDescriptionMatches(Product product, String expectedDescription);
     ```
 
 ### Target keyspace and table

@@ -28,7 +28,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Annotates a {@link Dao} method that updates an instance of an {@link Entity}-annotated class.
+ * Annotates a {@link Dao} method that updates one or more instances of an {@link Entity}-annotated
+ * class.
  *
  * <p>Example:
  *
@@ -42,10 +43,27 @@ import java.util.concurrent.CompletionStage;
  *
  * <h3>Parameters</h3>
  *
- * The first parameter must be the entity to update.
+ * The first parameter must be an entity instance. All of its non-PK properties will be interpreted
+ * as values to update.
  *
- * <p>If the query has a {@linkplain #ttl()} or {@linkplain #timestamp()} with placeholders, the
- * method must have corresponding additional parameters (same name, and a compatible Java type):
+ * <ul>
+ *   <li>If {@link #customWhereClause()} is empty, the mapper defaults to an update by primary key
+ *       (partition key + clustering columns). The WHERE clause is generated automatically, and
+ *       bound with the PK components of the provided entity instance. The query will update at most
+ *       one row.
+ *   <li>If {@link #customWhereClause()} is not empty, it completely replaces the WHERE clause. If
+ *       the provided string contains placeholders, the method must have corresponding additional
+ *       parameters (same name, and a compatible Java type):
+ *       <pre>
+ * &#64;Update(customWhereClause = "description LIKE :searchString")
+ * void updateIfDescriptionMatches(Product product, String searchString);
+ *       </pre>
+ *       The PK components of the provided entity are ignored. Multiple rows may be updated.
+ * </ul>
+ *
+ * <p>If the query has a {@linkplain #ttl() TTL} or {@linkplain #timestamp() timestamp} with
+ * placeholders, the method must have corresponding additional parameters (same name, and a
+ * compatible Java type):
  *
  * <pre>
  * &#64;Update(ttl = ":ttl")
@@ -54,7 +72,7 @@ import java.util.concurrent.CompletionStage;
  *
  * <pre>
  * &#64;Update(timestamp = ":timestamp")
- * void updateWithTimestamp(Product product, int timestamp);
+ * void updateWithTimestamp(Product product, long timestamp);
  * </pre>
  *
  * <h3>Return type</h3>
@@ -63,31 +81,32 @@ import java.util.concurrent.CompletionStage;
  *
  * <ul>
  *   <li>{@code void}.
- *   <li>a {@link ResultSet} - The method will return the raw query result, without any conversion.
- *       Useful for queries that use {@code customIfClause} or {@code ifExists}. The status of the
- *       update operation can be retrieved via {@code wasApplied()} method
+ *   <li>a {@code boolean} or {@link Boolean}, which will be mapped to {@link
+ *       ResultSet#wasApplied()}. This is intended for conditional queries.
  *       <pre>
  * &#64;Update(ifExists = true)
- * ResultSet updateIfExists(Product product);
+ * boolean updateIfExists(Product product);
  *       </pre>
- *   <li>a {@link Boolean} - when you are not interested in retrieving the whole ResultSet but only
- *       wasApply result. The {@link ResultSet} will be automatically mapped to Boolean.
+ *   <li>a {@link ResultSet}. The method will return the raw query result, without any conversion.
+ *       This is intended for queries with custom IF clauses; when those queries are not applied,
+ *       they return the actual values of the tested columns.
  *       <pre>
- *     &#64;Update(ifExists = true)
- *     boolean updateReturnWasApplied(Product product);
- *   </pre>
+ * &#64;Update(customIfClause = "description = :expectedDescription")
+ * ResultSet updateIfDescriptionMatches(Product product, String expectedDescription);
+ * // if the condition fails, the result set will contain columns '[applied]' and 'description'
+ *       </pre>
  *   <li>a {@link CompletionStage} or {@link CompletableFuture} of any of the above. The mapper will
- *       execute the query asynchronously. Note that for result set, you need to switch to the
- *       asynchronous equivalent {@link AsyncResultSet}
+ *       execute the query asynchronously. Note that for result sets, you need to switch to the
+ *       asynchronous equivalent {@link AsyncResultSet}.
  *       <pre>
  * &#64;Update
  * CompletionStage&lt;Void&gt; update(Product product);
  *
  * &#64;Update(ifExists = true)
- * CompletableFuture&lt;AsyncResultSet&gt; updateIfExists(Product product);
+ * CompletableFuture&lt;Boolean&gt; updateIfExists(Product product);
  *
- * &#64;Update(ifExists = true)
- * CompletableFuture&lt;Boolean&gt; updateIfExistsReturnWasApplied(Product product);
+ * &#64;Update(customIfClause = "description = :expectedDescription")
+ * CompletableFuture&lt;AsyncResultSet&gt; updateIfDescriptionMatches(Product product, String expectedDescription);
  *       </pre>
  * </ul>
  *
@@ -140,27 +159,27 @@ public @interface Update {
   String customIfClause() default "";
 
   /**
-   * A custom ttl that will be appended to the query via USING TTL
+   * The TTL (time to live) to use in the generated INSERT query.
    *
-   * <p>It can contain literal value {@code ttl = "1"} or placeholder {@code ttl = ":marker"}
+   * <p>If this starts with ":", it is interpreted as a named placeholder (that must have a
+   * corresponding parameter in the method signature). Otherwise, it must be a literal integer value
+   * (representing a number of seconds).
    *
-   * <p>If this is not empty, it gets appended in the generated query.</>
-   *
-   * <p>This clause can contain placeholders that will be bound with the method's parameters; see
-   * the top-level javadocs of this class for more explanations.
+   * <p>If the placeholder name is invalid or the literal can't be parsed as an integer (according
+   * to the rules of {@link Integer#parseInt(String)}), the mapper will issue a compile-time
+   * warning.
    */
   String ttl() default "";
 
   /**
-   * A custom timestamp that will be appended to the query via USING TTL
+   * The timestamp to use in the generated INSERT query.
    *
-   * <p>It can contain literal value {@code timestamp = "1"} or placeholder {@code timestamp =
-   * ":marker"}
+   * <p>If this starts with ":", it is interpreted as a named placeholder (that must have a
+   * corresponding parameter in the method signature). Otherwise, it must be literal long value
+   * (representing a number of microseconds since epoch).
    *
-   * <p>If this is not empty, it gets appended in the generated query.</>
-   *
-   * <p>This clause can contain placeholders that will be bound with the method's parameters; see
-   * the top-level javadocs of this class for more explanations.
+   * <p>If the placeholder name is invalid or the literal can't be parsed as a long (according to
+   * the rules of {@link Long#parseLong(String)}), the mapper will issue a compile-time warning.
    */
   String timestamp() default "";
 }

@@ -143,12 +143,8 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
 
     maybeAddWhereClause(
         methodBuilder, requestName, helperFieldName, annotation.customWhereClause());
-
-    if (!annotation.timestamp().isEmpty() || !annotation.ttl().isEmpty()) {
-      maybeAddTtl(annotation.ttl(), methodBuilder);
-      maybeAddTimestamp(annotation.timestamp(), methodBuilder);
-    }
-
+    maybeAddTtl(annotation.ttl(), methodBuilder);
+    maybeAddTimestamp(annotation.timestamp(), methodBuilder);
     maybeAddIfClause(methodBuilder, annotation);
 
     methodBuilder.addCode(").asCql()");
@@ -163,7 +159,7 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
 
     if (customWhereClause.isEmpty()) {
       methodBuilder.addCode(
-          "$[$1T $2L = $1T.newInstance((($4T)$3L.updateWhereByPrimaryKey()",
+          "$[$1T $2L = $1T.newInstance((($4T)$3L.updateByPrimaryKey()",
           SimpleStatement.class,
           requestName,
           helperFieldName,
@@ -194,7 +190,7 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
     }
 
     if (!annotation.customIfClause().isEmpty()) {
-      methodBuilder.addCode(".ifRaw($S)", " " + annotation.customIfClause());
+      methodBuilder.addCode(".ifRaw($S)", annotation.customIfClause());
     }
   }
 }

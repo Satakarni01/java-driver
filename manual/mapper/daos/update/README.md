@@ -29,7 +29,7 @@ An optional IF clause can be appended to the generated query. It can contain pla
 the method must have corresponding parameters (same name, and a compatible Java type):
 
 ```java
-@Update(customIfClause = "IF description = :expectedDescription")
+@Update(customIfClause = "description = :expectedDescription")
 void updateIfDescriptionMatches(Product product, String expectedDescription);
 ```
 

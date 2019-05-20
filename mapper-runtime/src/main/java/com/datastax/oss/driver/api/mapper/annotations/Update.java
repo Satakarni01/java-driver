@@ -120,8 +120,7 @@ public @interface Update {
    * <p>This is mutually exclusive with {@link #ifExists()} (if both are set, the mapper processor
    * will generate a compile-time error).
    *
-   * <p>If this is not empty, it gets appended at the end of the generated query. Note that the
-   * provided string must start with the {@code IF} keyword.
+   * <p>If this is not empty, it gets appended at the end of the generated query.
    *
    * <p>This clause can contain placeholders that will be bound with the method's parameters; see
    * the top-level javadocs of this class for more explanations.

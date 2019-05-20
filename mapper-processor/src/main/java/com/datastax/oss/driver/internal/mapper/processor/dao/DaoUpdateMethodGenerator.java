@@ -220,7 +220,7 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
     if (annotation.ifExists()) {
       methodBuilder.addCode(".ifExists()").addCode(".asCql()");
     } else if (!annotation.customIfClause().isEmpty()) {
-      methodBuilder.addCode(".asCql() + $S", " " + annotation.customIfClause());
+      methodBuilder.addCode(".ifRaw($S)", " " + annotation.customIfClause()).addCode(".asCql()");
     } else {
       methodBuilder.addCode(".asCql()");
     }

@@ -80,20 +80,6 @@ public class DaoUpdateGeneratorTest extends DaoMethodGeneratorTest {
             .returns(TypeName.VOID)
             .build(),
       },
-      {
-        "ttl: %34 on the: Update method is incorrect",
-        MethodSpec.methodBuilder("update")
-            .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-            .addAnnotation(
-                AnnotationSpec.builder(Update.class)
-                    .addMember("whereClause", "$S", "id = :id")
-                    .addMember("ifExists", "true")
-                    .addMember("ttl", "$S", "%34")
-                    .build())
-            .addParameter(ParameterSpec.builder(ENTITY_CLASS_NAME, "entity").build())
-            .returns(TypeName.VOID)
-            .build(),
-      },
     };
   }
 }

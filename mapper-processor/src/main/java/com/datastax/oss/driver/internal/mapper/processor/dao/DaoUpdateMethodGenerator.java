@@ -26,12 +26,10 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.mapper.annotations.Update;
-import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import com.datastax.oss.driver.internal.mapper.processor.ProcessorContext;
 import com.datastax.oss.driver.internal.mapper.processor.util.generation.GeneratedCodePatterns;
 import com.datastax.oss.driver.internal.querybuilder.update.DefaultUpdate;
-import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import java.util.EnumSet;
@@ -152,59 +150,14 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
     if (annotation.timestamp().isEmpty() && annotation.ttl().isEmpty()) {
       methodBuilder.addCode(")");
     } else {
-      maybeAddTimestampClause(methodBuilder, annotation.timestamp());
-      maybeAddTtlClause(methodBuilder, annotation.ttl());
+      maybeAddTtl(annotation.ttl(), methodBuilder);
+      maybeAddTimestamp(annotation.timestamp(), methodBuilder);
+      methodBuilder.addCode(")");
     }
 
     maybeAddIfClause(methodBuilder, annotation);
 
     methodBuilder.addCode(")$];\n");
-  }
-
-  @VisibleForTesting
-  void maybeAddTimestampClause(MethodSpec.Builder methodBuilder, String timestamp) {
-    if (!timestamp.isEmpty()) {
-      if (timestamp.startsWith(":")) {
-        methodBuilder.addCode(
-            ".usingTimestamp($1T.bindMarker($2S)))", QueryBuilder.class, timestamp.substring(1));
-      } else {
-        try {
-          long timestampInt = Long.parseLong(timestamp);
-          methodBuilder.addCode(".usingTimestamp($L))", timestampInt);
-        } catch (NumberFormatException ex) {
-          context
-              .getMessager()
-              .error(
-                  methodElement,
-                  "timestamp: %s on the: %s method is incorrect.",
-                  timestamp,
-                  Update.class.getSimpleName());
-        }
-      }
-    }
-  }
-
-  @VisibleForTesting
-  void maybeAddTtlClause(MethodSpec.Builder methodBuilder, String ttl) {
-    if (!ttl.isEmpty()) {
-      if (ttl.startsWith(":")) {
-        methodBuilder.addCode(
-            ".usingTtl($1T.bindMarker($2S)))", QueryBuilder.class, ttl.substring(1));
-      } else {
-        try {
-          int ttlLong = Integer.parseInt(ttl);
-          methodBuilder.addCode(".usingTtl($L))", ttlLong);
-        } catch (NumberFormatException ex) {
-          context
-              .getMessager()
-              .error(
-                  methodElement,
-                  "ttl: %s on the: %s method is incorrect.",
-                  ttl,
-                  Update.class.getSimpleName());
-        }
-      }
-    }
   }
 
   private void maybeAddIfClause(MethodSpec.Builder methodBuilder, Update annotation) {

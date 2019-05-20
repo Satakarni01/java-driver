@@ -37,7 +37,7 @@ public class DaoUpdateMethodGeneratorTest {
     MethodSpec.Builder builder = MethodSpec.constructorBuilder();
 
     // when
-    daoUpdateMethodGenerator.maybeAddTimestampClause(builder, timestamp);
+    daoUpdateMethodGenerator.maybeAddTimestamp(timestamp, builder);
 
     // then
     assertThat(builder.build().code).isEqualTo(CodeBlock.of(expected));
@@ -52,7 +52,7 @@ public class DaoUpdateMethodGeneratorTest {
     MethodSpec.Builder builder = MethodSpec.constructorBuilder();
 
     // when
-    daoUpdateMethodGenerator.maybeAddTtlClause(builder, ttl);
+    daoUpdateMethodGenerator.maybeAddTtl(ttl, builder);
 
     // then
     assertThat(builder.build().code).isEqualTo(CodeBlock.of(expected));
@@ -61,15 +61,15 @@ public class DaoUpdateMethodGeneratorTest {
   @DataProvider
   public static Object[][] usingTimestampProvider() {
     return new Object[][] {
-      {"1", ".usingTimestamp(1))"},
+      {"1", ".usingTimestamp(1)"},
       {
         ":ts",
-        ".usingTimestamp(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"ts\")))"
+        ".usingTimestamp(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"ts\"))"
       },
-      {"1", ".usingTimestamp(1))"},
+      {"1", ".usingTimestamp(1)"},
       {
         ":TS",
-        ".usingTimestamp(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"TS\")))"
+        ".usingTimestamp(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"TS\"))"
       },
     };
   }
@@ -77,15 +77,15 @@ public class DaoUpdateMethodGeneratorTest {
   @DataProvider
   public static Object[][] usingTtlProvider() {
     return new Object[][] {
-      {"1", ".usingTtl(1))"},
+      {"1", ".usingTtl(1)"},
       {
         ":ttl",
-        ".usingTtl(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"ttl\")))"
+        ".usingTtl(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"ttl\"))"
       },
-      {"1", ".usingTtl(1))"},
+      {"1", ".usingTtl(1)"},
       {
         ":TTL",
-        ".usingTtl(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"TTL\")))"
+        ".usingTtl(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"TTL\"))"
       },
     };
   }

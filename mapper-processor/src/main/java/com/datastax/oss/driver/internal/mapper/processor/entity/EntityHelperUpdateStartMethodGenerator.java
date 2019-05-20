@@ -18,7 +18,6 @@ package com.datastax.oss.driver.internal.mapper.processor.entity;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.mapper.annotations.Update;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
-import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateStart;
 import com.datastax.oss.driver.internal.mapper.processor.MethodGenerator;
 import com.datastax.oss.driver.internal.mapper.processor.ProcessorContext;
@@ -27,11 +26,11 @@ import com.squareup.javapoet.MethodSpec;
 import java.util.Optional;
 import javax.lang.model.element.Modifier;
 
-public class EntityHelperUpdateMethodGenerator implements MethodGenerator {
+public class EntityHelperUpdateStartMethodGenerator implements MethodGenerator {
 
   private final EntityDefinition entityDefinition;
 
-  EntityHelperUpdateMethodGenerator(
+  EntityHelperUpdateStartMethodGenerator(
       EntityDefinition entityDefinition,
       EntityHelperGenerator enclosingClass,
       ProcessorContext context) {
@@ -41,7 +40,7 @@ public class EntityHelperUpdateMethodGenerator implements MethodGenerator {
   @Override
   public Optional<MethodSpec> generate() {
     MethodSpec.Builder updateBuilder =
-        MethodSpec.methodBuilder("update")
+        MethodSpec.methodBuilder("updateStart")
             .addAnnotation(Override.class)
             .addModifiers(Modifier.PUBLIC)
             .returns(DefaultUpdate.class);
@@ -66,23 +65,14 @@ public class EntityHelperUpdateMethodGenerator implements MethodGenerator {
                   + ": $2T.update(keyspaceId, tableId)",
               UpdateStart.class,
               QueryBuilder.class)
-          .addCode("$[return ($1T)(($1T) (($1T)update)", DefaultUpdate.class);
-
-      for (PropertyDefinition property : entityDefinition.getPrimaryKey()) {
-        updateBuilder.addCode(
-            "\n.where($1T.column($2S).isEqualTo($3T.bindMarker($2S)))",
-            Relation.class,
-            property.getCqlName(),
-            QueryBuilder.class);
-      }
-
-      updateBuilder.addCode(")");
+          .addCode("$[return (($1T)update", DefaultUpdate.class);
 
       for (PropertyDefinition property : entityDefinition.getRegularColumns()) {
         // we cannot use getAllColumns because update cannot SET for PKs
         updateBuilder.addCode(
             "\n.setColumn($1S, $2T.bindMarker($1S))", property.getCqlName(), QueryBuilder.class);
       }
+      updateBuilder.addCode(")");
       updateBuilder.addCode("$];\n");
     }
     return Optional.of(updateBuilder.build());

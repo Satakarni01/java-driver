@@ -108,28 +108,38 @@ public interface EntityHelper<EntityT> {
   RegularInsert insert();
 
   /**
-   * Builds an update query for this entity.
+   * Builds the beginning of a Update query to fetch one or more instances of the entity.
+   *
+   * <p>This is the same as {@link #updateWhereByPrimaryKey()} ()}, but without the {@code WHERE}
+   * clause. This would typically not be executed as-is, but instead completed with a custom {@code
+   * WHERE} clause (either added with the query builder DSL, or concatenated to the built query).
+   */
+  Update updateStart();
+
+  /**
+   * Builds a Update query to fetch an instance of the entity by primary key (partition key +
+   * clustering columns).
    *
    * <p>The returned query is roughly the equivalent of:
    *
    * <pre>{@code
    * QueryBuilder.update(keyspaceId, tableId)
-   *     .where(Relation.column("id").isEqualTo(QueryBuilder.bindMarker("id"))
-   *     .setColumn("id", QueryBuilder.bindMarker("id"))
-   *     .setColumn("name", QueryBuilder.bindMarker("name"))
-   *     ...
+   *    .where(Relation.column("id").isEqualTo(QueryBuilder.bindMarker("id"))
+   *
    * }</pre>
    *
-   * All mapped properties of the entity are included as bindable values (the bind markers have the
-   * same names as the columns).
+   * All mapped properties of the entity are included in the result set.
    *
-   * <p>The column names are inferred from the naming strategy for this entity.
+   * <p>All components of the primary key are listed in the {@code WHERE} clause as bindable values
+   * (the bind markers have the same names as the columns). They are listed in the natural order,
+   * i.e. partition key columns first, followed by clustering columns (in the order defined by the
+   * {@link PartitionKey} and {@link ClusteringColumn} annotations on the entity class).
    *
    * <p>The keyspace and table identifiers are those of the DAO that this helper was obtained from;
    * if the DAO was built without a specific keyspace and table, the query doesn't specify a
    * keyspace, and the table name is inferred from the naming strategy.
    */
-  Update update();
+  Update updateWhereByPrimaryKey();
 
   /**
    * Builds a select query to fetch an instance of the entity by primary key (partition key +

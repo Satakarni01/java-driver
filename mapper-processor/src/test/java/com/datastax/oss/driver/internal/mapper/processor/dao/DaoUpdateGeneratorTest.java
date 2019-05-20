@@ -30,7 +30,7 @@ import org.junit.runner.RunWith;
 @RunWith(DataProviderRunner.class)
 public class DaoUpdateGeneratorTest extends DaoMethodGeneratorTest {
 
-  private static final AnnotationSpec UPDATE_ANNOTATION_WITH_WHERE_CLAUSE =
+  private static final AnnotationSpec UPDATE_ANNOTATION =
       AnnotationSpec.builder(Update.class).build();
 
   @Test
@@ -47,13 +47,13 @@ public class DaoUpdateGeneratorTest extends DaoMethodGeneratorTest {
         "Wrong number of parameters: Update methods must have at least one",
         MethodSpec.methodBuilder("update")
             .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-            .addAnnotation(UPDATE_ANNOTATION_WITH_WHERE_CLAUSE)
+            .addAnnotation(UPDATE_ANNOTATION)
             .build(),
       },
       {
         "Invalid parameter type: Update methods must take the entity to update as the first parameter",
         MethodSpec.methodBuilder("update")
-            .addAnnotation(UPDATE_ANNOTATION_WITH_WHERE_CLAUSE)
+            .addAnnotation(UPDATE_ANNOTATION)
             .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
             .addParameter(ParameterSpec.builder(String.class, "a").build())
             .build(),
@@ -61,7 +61,7 @@ public class DaoUpdateGeneratorTest extends DaoMethodGeneratorTest {
       {
         "Invalid return type: Update methods must return either void or the entity class (possibly wrapped in a CompletionStage/CompletableFuture)",
         MethodSpec.methodBuilder("update")
-            .addAnnotation(UPDATE_ANNOTATION_WITH_WHERE_CLAUSE)
+            .addAnnotation(UPDATE_ANNOTATION)
             .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
             .addParameter(ParameterSpec.builder(ENTITY_CLASS_NAME, "entity").build())
             .returns(TypeName.INT)

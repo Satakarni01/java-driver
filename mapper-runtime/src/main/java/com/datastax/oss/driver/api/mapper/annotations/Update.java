@@ -107,6 +107,17 @@ import java.util.concurrent.CompletionStage;
 public @interface Update {
 
   /**
+   * A custom WHERE clause for the UPDATE query.
+   *
+   * <p>If this is not empty, it completely replaces the WHERE clause in the generated query. Note
+   * that the provided string <b>must not</b> contain the {@code WHERE} keyword.
+   *
+   * <p>This clause can contain placeholders that will be bound with the method's parameters; see
+   * the top-level javadocs of this class for more explanations.
+   */
+  String customWhereClause() default "";
+
+  /**
    * Whether to append an IF EXISTS clause at the end of the generated UPDATE query.
    *
    * <p>This is mutually exclusive with {@link #customIfClause()} (if both are set, the mapper
@@ -120,7 +131,8 @@ public @interface Update {
    * <p>This is mutually exclusive with {@link #ifExists()} (if both are set, the mapper processor
    * will generate a compile-time error).
    *
-   * <p>If this is not empty, it gets appended at the end of the generated query.
+   * <p>If this is not empty, it gets added to the generated query. Note that the provided string
+   * <b>must not</b> contain the {@code IF} keyword.
    *
    * <p>This clause can contain placeholders that will be bound with the method's parameters; see
    * the top-level javadocs of this class for more explanations.

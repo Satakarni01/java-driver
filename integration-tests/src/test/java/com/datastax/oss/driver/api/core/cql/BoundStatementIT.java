@@ -381,7 +381,7 @@ public class BoundStatementIT {
     try (CqlSession session = SessionUtils.newSession(simulacron)) {
       Map<String, Object> params = ImmutableMap.of("k", 0);
       Map<String, String> paramTypes = ImmutableMap.of("k", "int");
-      // set timestamp on simple statement, but will be unused since overridden by bound statement.
+      // set timeout on simple statement, but will be unused since overridden by bound statement.
       simulacron
           .cluster()
           .prime(

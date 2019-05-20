@@ -86,7 +86,7 @@ public class DriverExecutionProfileIT {
       // configure query with delay of 4 seconds.
       simulacron.cluster().prime(when(query).then(noRows()).delay(4, TimeUnit.SECONDS));
 
-      // Execute query without profile, should timestamp with default session timestamp (2s).
+      // Execute query without profile, should timeout with default session timeout (2s).
       try {
         session.execute(query);
         fail("Should have timed out");
@@ -94,7 +94,7 @@ public class DriverExecutionProfileIT {
         // expected.
       }
 
-      // Execute query with profile, should not timestamp since waits up to 10 seconds.
+      // Execute query with profile, should not timeout since waits up to 10 seconds.
       session.execute(SimpleStatement.builder(query).setExecutionProfileName("olap").build());
     }
   }

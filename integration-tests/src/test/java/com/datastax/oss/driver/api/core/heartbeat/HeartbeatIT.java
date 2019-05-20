@@ -101,8 +101,7 @@ public class HeartbeatIT {
     // Configure node to reject startup.
     simulacronNode.rejectConnections(0, RejectScope.REJECT_STARTUP);
 
-    // Try to create a session. Note that the init query timestamp is twice the heartbeat interval,
-    // so
+    // Try to create a session. Note that the init query timeout is twice the heartbeat interval, so
     // we're sure that at least one heartbeat would be sent if it was not properly disabled during
     // init.
     try (CqlSession session = newSession()) {
@@ -182,7 +181,7 @@ public class HeartbeatIT {
       checkThat(() -> heartbeats.get() >= 2).becomesTrue();
       assertThat(node.getState()).isEqualTo(NodeState.UP);
 
-      // configure node to not respond to options request, which should cause a timestamp.
+      // configure node to not respond to options request, which should cause a timeout.
       simulacronNode.prime(when(Options.INSTANCE).then(noResult()));
       heartbeats.set(0);
 

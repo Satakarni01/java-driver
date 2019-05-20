@@ -14,6 +14,21 @@ public interface ProductDao {
 
 The first parameter must be the entity to update.
 
+If the annotation doesn't have a `customWhereClause`, the mapper defaults to a where by primary
+key (partition key + clustering columns). The method's parameters must match the types of the
+[primary key columns](../../entities/#primary-key-columns), in the exact order (as defined by the
+[@PartitionKey] and [@ClusteringColumn] annotations). The parameter names don't necessarily need to
+match the names of the columns.
+
+If the annotation has a `customWhereClause`, it completely replaces the WHERE clause. The provided
+string can contain named placeholders. In that case, the method must have a corresponding parameter
+for each, with the same name and a compatible Java type.
+
+```java
+@Update(customWhereClause = "description LIKE :description")
+boolean updateByDescription(Product product, String description);
+```
+
 If the query has a custom timestamp or ttl with placeholders, the method must have corresponding additional
 parameters (same name, and a compatible Java type):
 

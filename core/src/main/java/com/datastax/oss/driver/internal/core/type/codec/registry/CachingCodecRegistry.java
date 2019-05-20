@@ -31,6 +31,7 @@ import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import com.datastax.oss.driver.shaded.guava.common.reflect.TypeToken;
+import com.datastax.oss.protocol.internal.ProtocolConstants;
 import com.datastax.oss.protocol.internal.util.IntMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -253,7 +254,7 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
         // Empty collections are always encoded the same way, so any element type will do
         // in the absence of a CQL type. When the CQL type is known, we piggyback on codecFor
         // to guess the best Java type.
-        return cqlType == null ? JAVA_TYPE_FOR_EMPTY_LISTS : codecFor(cqlType).getJavaType();
+        return cqlType == null ? JAVA_TYPE_FOR_EMPTY_LISTS : inferJavaTypeFromCqlType(cqlType);
       } else {
         GenericType<?> elementType =
             inspectType(
@@ -263,7 +264,7 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
     } else if (value instanceof Set) {
       Set<?> set = (Set) value;
       if (set.isEmpty()) {
-        return cqlType == null ? JAVA_TYPE_FOR_EMPTY_SETS : codecFor(cqlType).getJavaType();
+        return cqlType == null ? JAVA_TYPE_FOR_EMPTY_SETS : inferJavaTypeFromCqlType(cqlType);
       } else {
         GenericType<?> elementType =
             inspectType(
@@ -274,7 +275,7 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
     } else if (value instanceof Map) {
       Map<?, ?> map = (Map) value;
       if (map.isEmpty()) {
-        return cqlType == null ? JAVA_TYPE_FOR_EMPTY_MAPS : codecFor(cqlType).getJavaType();
+        return cqlType == null ? JAVA_TYPE_FOR_EMPTY_MAPS : inferJavaTypeFromCqlType(cqlType);
       } else {
         Map.Entry<?, ?> entry = map.entrySet().iterator().next();
         GenericType<?> keyType =
@@ -287,6 +288,71 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
     } else {
       // There's not much more we can do
       return GenericType.of(value.getClass());
+    }
+  }
+
+  protected GenericType<?> inferJavaTypeFromCqlType(@NonNull DataType cqlType) {
+    if (cqlType instanceof ListType) {
+      DataType elementType = ((ListType) cqlType).getElementType();
+      return GenericType.listOf(inferJavaTypeFromCqlType(elementType));
+    } else if (cqlType instanceof SetType) {
+      DataType elementType = ((SetType) cqlType).getElementType();
+      return GenericType.setOf(inferJavaTypeFromCqlType(elementType));
+    } else if (cqlType instanceof MapType) {
+      DataType keyType = ((MapType) cqlType).getKeyType();
+      DataType valueType = ((MapType) cqlType).getValueType();
+      return GenericType.mapOf(
+          inferJavaTypeFromCqlType(keyType), inferJavaTypeFromCqlType(valueType));
+    }
+    switch (cqlType.getProtocolCode()) {
+      case ProtocolConstants.DataType.CUSTOM:
+        return GenericType.BYTE_BUFFER;
+      case ProtocolConstants.DataType.ASCII:
+        return GenericType.STRING;
+      case ProtocolConstants.DataType.BIGINT:
+        return GenericType.LONG;
+      case ProtocolConstants.DataType.BLOB:
+        return GenericType.BYTE_BUFFER;
+      case ProtocolConstants.DataType.BOOLEAN:
+        return GenericType.BOOLEAN;
+      case ProtocolConstants.DataType.COUNTER:
+        return GenericType.LONG;
+      case ProtocolConstants.DataType.DECIMAL:
+        return GenericType.BIG_DECIMAL;
+      case ProtocolConstants.DataType.DOUBLE:
+        return GenericType.DOUBLE;
+      case ProtocolConstants.DataType.FLOAT:
+        return GenericType.FLOAT;
+      case ProtocolConstants.DataType.INT:
+        return GenericType.INTEGER;
+      case ProtocolConstants.DataType.TIMESTAMP:
+        return GenericType.INSTANT;
+      case ProtocolConstants.DataType.UUID:
+        return GenericType.UUID;
+      case ProtocolConstants.DataType.VARCHAR:
+        return GenericType.STRING;
+      case ProtocolConstants.DataType.VARINT:
+        return GenericType.BIG_INTEGER;
+      case ProtocolConstants.DataType.TIMEUUID:
+        return GenericType.UUID;
+      case ProtocolConstants.DataType.INET:
+        return GenericType.INET_ADDRESS;
+      case ProtocolConstants.DataType.DATE:
+        return GenericType.LOCAL_DATE;
+      case ProtocolConstants.DataType.TIME:
+        return GenericType.LOCAL_TIME;
+      case ProtocolConstants.DataType.SMALLINT:
+        return GenericType.SHORT;
+      case ProtocolConstants.DataType.TINYINT:
+        return GenericType.BYTE;
+      case ProtocolConstants.DataType.DURATION:
+        return GenericType.CQL_DURATION;
+      case ProtocolConstants.DataType.UDT:
+        return GenericType.UDT_VALUE;
+      case ProtocolConstants.DataType.TUPLE:
+        return GenericType.TUPLE_VALUE;
+      default:
+        throw new CodecNotFoundException(cqlType, null);
     }
   }
 

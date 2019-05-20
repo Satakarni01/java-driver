@@ -33,6 +33,7 @@ import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import com.datastax.oss.driver.shaded.guava.common.reflect.TypeToken;
 import com.datastax.oss.protocol.internal.util.IntMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
@@ -157,16 +158,6 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
     Preconditions.checkNotNull(value);
     LOG.trace("[{}] Looking up codec for CQL type {} and object {}", logPrefix, cqlType, value);
 
-    // Special case for empty collections: inspectType won't work because we have nothing to infer
-    // the element type (it will return a dummy element type that doesn't match cqlType).
-    if (value instanceof List && ((List) value).isEmpty()) {
-      return uncheckedCast(codecFor(JAVA_TYPE_FOR_EMPTY_LISTS));
-    } else if (value instanceof Set && ((Set) value).isEmpty()) {
-      return uncheckedCast(codecFor(JAVA_TYPE_FOR_EMPTY_SETS));
-    } else if (value instanceof Map && ((Map) value).isEmpty()) {
-      return uncheckedCast(codecFor(JAVA_TYPE_FOR_EMPTY_MAPS));
-    }
-
     TypeCodec<?> primitiveCodec = primitiveCodecsByCode.get(cqlType.getProtocolCode());
     if (primitiveCodec != null && primitiveCodec.accepts(value)) {
       LOG.trace("[{}] Found matching primitive codec {}", logPrefix, primitiveCodec);
@@ -185,7 +176,7 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
       return uncheckedCast(codecFor(cqlType, UdtValue.class));
     }
 
-    GenericType<?> javaType = inspectType(value);
+    GenericType<?> javaType = inspectType(value, cqlType);
     LOG.trace("[{}] Continuing based on inferred type {}", logPrefix, javaType);
     return uncheckedCast(getCachedCodec(cqlType, javaType, true));
   }
@@ -215,7 +206,7 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
       return uncheckedCast(codecFor(((UdtValue) value).getType(), UdtValue.class));
     }
 
-    GenericType<?> javaType = inspectType(value);
+    GenericType<?> javaType = inspectType(value, null);
     LOG.trace("[{}] Continuing based on inferred type {}", logPrefix, javaType);
     return uncheckedCast(getCachedCodec(null, javaType, true));
   }
@@ -255,32 +246,42 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
         : codec.accepts(javaType);
   }
 
-  protected GenericType<?> inspectType(Object value) {
+  protected GenericType<?> inspectType(Object value, @Nullable DataType cqlType) {
     if (value instanceof List) {
       List<?> list = (List) value;
       if (list.isEmpty()) {
-        // The empty list is always encoded the same way, so any element type will do
-        return JAVA_TYPE_FOR_EMPTY_LISTS;
+        // Empty collections are always encoded the same way, so any element type will do
+        // in the absence of a CQL type. When the CQL type is known, we piggyback on codecFor
+        // to guess the best Java type.
+        return cqlType == null ? JAVA_TYPE_FOR_EMPTY_LISTS : codecFor(cqlType).getJavaType();
       } else {
-        GenericType<?> elementType = inspectType(list.get(0));
+        GenericType<?> elementType =
+            inspectType(
+                list.get(0), cqlType == null ? null : ((ListType) cqlType).getElementType());
         return GenericType.listOf(elementType);
       }
     } else if (value instanceof Set) {
       Set<?> set = (Set) value;
       if (set.isEmpty()) {
-        return JAVA_TYPE_FOR_EMPTY_SETS;
+        return cqlType == null ? JAVA_TYPE_FOR_EMPTY_SETS : codecFor(cqlType).getJavaType();
       } else {
-        GenericType<?> elementType = inspectType(set.iterator().next());
+        GenericType<?> elementType =
+            inspectType(
+                set.iterator().next(),
+                cqlType == null ? null : ((SetType) cqlType).getElementType());
         return GenericType.setOf(elementType);
       }
     } else if (value instanceof Map) {
       Map<?, ?> map = (Map) value;
       if (map.isEmpty()) {
-        return JAVA_TYPE_FOR_EMPTY_MAPS;
+        return cqlType == null ? JAVA_TYPE_FOR_EMPTY_MAPS : codecFor(cqlType).getJavaType();
       } else {
         Map.Entry<?, ?> entry = map.entrySet().iterator().next();
-        GenericType<?> keyType = inspectType(entry.getKey());
-        GenericType<?> valueType = inspectType(entry.getValue());
+        GenericType<?> keyType =
+            inspectType(entry.getKey(), cqlType == null ? null : ((MapType) cqlType).getKeyType());
+        GenericType<?> valueType =
+            inspectType(
+                entry.getValue(), cqlType == null ? null : ((MapType) cqlType).getValueType());
         return GenericType.mapOf(keyType, valueType);
       }
     } else {
@@ -291,7 +292,7 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
 
   // Try to create a codec when we haven't found it in the cache
   protected TypeCodec<?> createCodec(
-      DataType cqlType, GenericType<?> javaType, boolean isJavaCovariant) {
+      @Nullable DataType cqlType, @Nullable GenericType<?> javaType, boolean isJavaCovariant) {
     LOG.trace("[{}] Cache miss, creating codec", logPrefix);
     // Either type can be null, but not both.
     if (javaType == null) {

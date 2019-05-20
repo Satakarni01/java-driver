@@ -72,7 +72,9 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
   private final IntMap<TypeCodec> primitiveCodecsByCode;
 
   protected CachingCodecRegistry(
-      String logPrefix, TypeCodec<?>[] primitiveCodecs, TypeCodec<?>[] userCodecs) {
+      @NonNull String logPrefix,
+      @NonNull TypeCodec<?>[] primitiveCodecs,
+      @NonNull TypeCodec<?>[] userCodecs) {
     this.logPrefix = logPrefix;
     this.primitiveCodecs = primitiveCodecs;
     this.userCodecs = userCodecs;
@@ -87,7 +89,7 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
    * future calls).
    */
   protected abstract TypeCodec<?> getCachedCodec(
-      DataType cqlType, GenericType<?> javaType, boolean isJavaCovariant);
+      @Nullable DataType cqlType, @Nullable GenericType<?> javaType, boolean isJavaCovariant);
 
   @NonNull
   @Override
@@ -97,8 +99,11 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
   }
 
   // Not exposed publicly, (isJavaCovariant=true) is only used for internal recursion
+  @NonNull
   protected <JavaTypeT> TypeCodec<JavaTypeT> codecFor(
-      DataType cqlType, GenericType<JavaTypeT> javaType, boolean isJavaCovariant) {
+      @NonNull DataType cqlType,
+      @NonNull GenericType<JavaTypeT> javaType,
+      boolean isJavaCovariant) {
     LOG.trace("[{}] Looking up codec for {} <-> {}", logPrefix, cqlType, javaType);
     TypeCodec<?> primitiveCodec = primitiveCodecsByCode.get(cqlType.getProtocolCode());
     if (primitiveCodec != null && matches(primitiveCodec, javaType, isJavaCovariant)) {
@@ -219,8 +224,9 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
   }
 
   // Not exposed publicly, (isJavaCovariant=true) is only used for internal recursion
+  @NonNull
   protected <JavaTypeT> TypeCodec<JavaTypeT> codecFor(
-      GenericType<JavaTypeT> javaType, boolean isJavaCovariant) {
+      @NonNull GenericType<JavaTypeT> javaType, boolean isJavaCovariant) {
     LOG.trace(
         "[{}] Looking up codec for Java type {} (covariant = {})",
         logPrefix,
@@ -241,13 +247,15 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
     return uncheckedCast(getCachedCodec(null, javaType, isJavaCovariant));
   }
 
-  protected boolean matches(TypeCodec<?> codec, GenericType<?> javaType, boolean isJavaCovariant) {
+  protected boolean matches(
+      @NonNull TypeCodec<?> codec, @NonNull GenericType<?> javaType, boolean isJavaCovariant) {
     return (isJavaCovariant)
         ? codec.getJavaType().isSupertypeOf(javaType)
         : codec.accepts(javaType);
   }
 
-  protected GenericType<?> inspectType(Object value, @Nullable DataType cqlType) {
+  @NonNull
+  protected GenericType<?> inspectType(@NonNull Object value, @Nullable DataType cqlType) {
     if (value instanceof List) {
       List<?> list = (List) value;
       if (list.isEmpty()) {
@@ -291,6 +299,7 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
     }
   }
 
+  @NonNull
   protected GenericType<?> inferJavaTypeFromCqlType(@NonNull DataType cqlType) {
     if (cqlType instanceof ListType) {
       DataType elementType = ((ListType) cqlType).getElementType();
@@ -357,6 +366,7 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
   }
 
   // Try to create a codec when we haven't found it in the cache
+  @NonNull
   protected TypeCodec<?> createCodec(
       @Nullable DataType cqlType, @Nullable GenericType<?> javaType, boolean isJavaCovariant) {
     LOG.trace("[{}] Cache miss, creating codec", logPrefix);
@@ -422,7 +432,8 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
 
   // Try to create a codec when we haven't found it in the cache.
   // Variant where the CQL type is unknown. Can be covariant if we come from a lookup by Java value.
-  protected TypeCodec<?> createCodec(GenericType<?> javaType, boolean isJavaCovariant) {
+  @NonNull
+  protected TypeCodec<?> createCodec(@NonNull GenericType<?> javaType, boolean isJavaCovariant) {
     TypeToken<?> token = javaType.__getToken();
     if (List.class.isAssignableFrom(token.getRawType())
         && token.getType() instanceof ParameterizedType) {
@@ -450,7 +461,8 @@ public abstract class CachingCodecRegistry implements CodecRegistry {
 
   // Try to create a codec when we haven't found it in the cache.
   // Variant where the Java type is unknown.
-  protected TypeCodec<?> createCodec(DataType cqlType) {
+  @NonNull
+  protected TypeCodec<?> createCodec(@NonNull DataType cqlType) {
     if (cqlType instanceof ListType) {
       DataType elementType = ((ListType) cqlType).getElementType();
       TypeCodec<Object> elementCodec = codecFor(elementType);

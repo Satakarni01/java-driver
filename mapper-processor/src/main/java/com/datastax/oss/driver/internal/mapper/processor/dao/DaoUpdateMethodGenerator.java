@@ -151,6 +151,7 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
 
     maybeAddIfClause(methodBuilder, annotation);
 
+    methodBuilder.addCode(").asCql()");
     methodBuilder.addCode(")$];\n");
   }
 
@@ -160,14 +161,8 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
       String helperFieldName,
       String customWhereClause) {
 
-    //    methodBuilder.addCode(
-    //        "$[$1T $2L = $1T.newInstance((($4T)$3L.update()",
-    //        SimpleStatement.class,
-    //        requestName,
-    //        helperFieldName,
-    //        DefaultUpdate.class);
     if (customWhereClause.isEmpty()) {
-      methodBuilder.addCode( // todo addCode?
+      methodBuilder.addCode(
           "$[$1T $2L = $1T.newInstance((($4T)$3L.updateWhereByPrimaryKey()",
           SimpleStatement.class,
           requestName,
@@ -195,11 +190,11 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
     }
 
     if (annotation.ifExists()) {
-      methodBuilder.addCode(".ifExists())").addCode(".asCql()");
-    } else if (!annotation.customIfClause().isEmpty()) {
-      methodBuilder.addCode(".ifRaw($S))", " " + annotation.customIfClause()).addCode(".asCql()");
-    } else {
-      methodBuilder.addCode(").asCql()");
+      methodBuilder.addCode(".ifExists()");
+    }
+
+    if (!annotation.customIfClause().isEmpty()) {
+      methodBuilder.addCode(".ifRaw($S)", " " + annotation.customIfClause());
     }
   }
 }

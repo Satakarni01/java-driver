@@ -85,7 +85,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity() {
+  public void should_update_entity() {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     dao.update(FLAMETHROWER);
@@ -93,7 +93,51 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity_asynchronously() {
+  public void should_update_entity_matching_custom_where_clause() {
+    // given
+    Product toBeUpdated = new Product(UUID.randomUUID(), "a", new Dimensions(1, 1, 1));
+    Product shouldNotBeUpdated = new Product(UUID.randomUUID(), "b", new Dimensions(1, 1, 1));
+
+    dao.update(toBeUpdated);
+    dao.update(shouldNotBeUpdated);
+
+    assertThat(dao.findById(toBeUpdated.getId())).isEqualTo(toBeUpdated);
+    assertThat(dao.findById(shouldNotBeUpdated.getId())).isEqualTo(shouldNotBeUpdated);
+
+    // when
+    Product afterUpdate = new Product(toBeUpdated.getId(), "c", new Dimensions(1, 1, 1));
+    dao.updateWhereId(afterUpdate, toBeUpdated.getId());
+
+    // then
+    assertThat(dao.findById(toBeUpdated.getId())).isEqualTo(afterUpdate);
+    assertThat(dao.findById(shouldNotBeUpdated.getId())).isEqualTo(shouldNotBeUpdated);
+  }
+
+  @Test
+  public void should_update_entity_matching_custom_where_in_clause() {
+    // given
+    Product toBeUpdated = new Product(UUID.randomUUID(), "a", new Dimensions(1, 1, 1));
+    Product toBeUpdated2 = new Product(UUID.randomUUID(), "b", new Dimensions(1, 1, 1));
+
+    dao.update(toBeUpdated);
+    dao.update(toBeUpdated2);
+
+    assertThat(dao.findById(toBeUpdated.getId())).isEqualTo(toBeUpdated);
+    assertThat(dao.findById(toBeUpdated2.getId())).isEqualTo(toBeUpdated2);
+
+    // when
+    Product afterUpdate = new Product(toBeUpdated.getId(), "c", new Dimensions(1, 1, 1));
+    dao.updateWhereIdIn(afterUpdate, toBeUpdated.getId(), toBeUpdated2.getId());
+
+    // then
+    assertThat(dao.findById(toBeUpdated.getId()).getDescription())
+        .isEqualTo(afterUpdate.getDescription());
+    assertThat(dao.findById(toBeUpdated2.getId()).getDescription())
+        .isEqualTo(afterUpdate.getDescription());
+  }
+
+  @Test
+  public void should_update_entity_asynchronously() {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     CompletableFutures.getUninterruptibly(dao.updateAsync(FLAMETHROWER));
@@ -101,7 +145,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity_with_timestamp() {
+  public void should_update_entity_with_timestamp() {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     long timestamp = 1234;
@@ -120,7 +164,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity_with_timestamp_literal() {
+  public void should_update_entity_with_timestamp_literal() {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     dao.updateWithBoundTimestampLiteral(FLAMETHROWER);
@@ -138,7 +182,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity_with_ttl() {
+  public void should_update_entity_with_ttl() {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     int ttl = 100_000;
@@ -156,7 +200,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity_with_ttl_literal() {
+  public void should_update_entity_with_ttl_literal() {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     dao.updateWithBoundTtlLiteral(FLAMETHROWER);
@@ -173,7 +217,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity_with_timestamp_asynchronously() {
+  public void should_update_entity_with_timestamp_asynchronously() {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     long timestamp = 1234;
@@ -193,7 +237,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity_if_exists() {
+  public void should_update_entity_if_exists() {
     dao.update(FLAMETHROWER);
     assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
 
@@ -203,7 +247,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_not_insert_entity_if_not_exists() {
+  public void should_not_update_entity_if_not_exists() {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     Product otherProduct =
@@ -212,7 +256,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity_if_exists_asynchronously() {
+  public void should_update_entity_if_exists_asynchronously() {
     dao.update(FLAMETHROWER);
     assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
 
@@ -225,7 +269,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_not_insert_entity_if_not_exists_asynchronously() {
+  public void should_not_update_entity_if_not_exists_asynchronously() {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     Product otherProduct =
@@ -237,7 +281,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity_if_condition_is_met() {
+  public void should_update_entity_if_condition_is_met() {
     dao.update(
         new Product(FLAMETHROWER.getId(), "Description for length 10", new Dimensions(10, 1, 1)));
     assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
@@ -248,7 +292,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_not_insert_entity_if_condition_is_not_met() {
+  public void should_not_update_entity_if_condition_is_not_met() {
     dao.update(
         new Product(FLAMETHROWER.getId(), "Description for length 10", new Dimensions(10, 1, 1)));
     assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
@@ -259,7 +303,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_async_insert_entity_if_condition_is_met() {
+  public void should_async_update_entity_if_condition_is_met() {
     dao.update(
         new Product(FLAMETHROWER.getId(), "Description for length 10", new Dimensions(10, 1, 1)));
     assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
@@ -273,7 +317,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_not_async_insert_entity_if_condition_is_not_met() {
+  public void should_not_async_update_entity_if_condition_is_not_met() {
     dao.update(
         new Product(FLAMETHROWER.getId(), "Description for length 10", new Dimensions(10, 1, 1)));
     assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
@@ -294,7 +338,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity_and_return_was_applied() {
+  public void should_update_entity_and_return_was_applied() {
     dao.update(FLAMETHROWER);
     assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
 
@@ -303,7 +347,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_not_insert_entity_and_return_was_not_applied() {
+  public void should_not_update_entity_and_return_was_not_applied() {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     assertThat(dao.updateReturnWasApplied(FLAMETHROWER)).isFalse();
@@ -311,7 +355,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity_and_return_was_applied_async() {
+  public void should_update_entity_and_return_was_applied_async() {
     dao.update(FLAMETHROWER);
     assertThat(dao.findById(FLAMETHROWER.getId())).isNotNull();
 
@@ -321,7 +365,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_not_insert_entity_and_return_was_not_applied_async() {
+  public void should_not_update_entity_and_return_was_not_applied_async() {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     assertThat(CompletableFutures.getUninterruptibly(dao.updateReturnWasAppliedAsync(FLAMETHROWER)))
@@ -343,6 +387,12 @@ public class UpdateEntityIT extends InventoryITBase {
 
     @Update
     void update(Product product);
+
+    @Update(customWhereClause = "id = :id")
+    void updateWhereId(Product product, UUID id);
+
+    @Update(customWhereClause = "id IN (:id, :id2)")
+    void updateWhereIdIn(Product product, UUID id, UUID id2);
 
     @Update(timestamp = ":timestamp")
     void updateWithBoundTimestamp(Product product, long timestamp);

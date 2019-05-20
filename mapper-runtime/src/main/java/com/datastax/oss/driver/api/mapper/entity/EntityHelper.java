@@ -108,7 +108,7 @@ public interface EntityHelper<EntityT> {
   RegularInsert insert();
 
   /**
-   * Builds the beginning of a Update query to fetch one or more instances of the entity.
+   * Builds the beginning of a Update query to update an entity.
    *
    * <p>This is the same as {@link #updateWhereByPrimaryKey()} ()}, but without the {@code WHERE}
    * clause. This would typically not be executed as-is, but instead completed with a custom {@code
@@ -117,7 +117,7 @@ public interface EntityHelper<EntityT> {
   Update updateStart();
 
   /**
-   * Builds a Update query to fetch an instance of the entity by primary key (partition key +
+   * Builds a Update query to update an instance of the entity by primary key (partition key +
    * clustering columns).
    *
    * <p>The returned query is roughly the equivalent of:
@@ -125,7 +125,7 @@ public interface EntityHelper<EntityT> {
    * <pre>{@code
    * QueryBuilder.update(keyspaceId, tableId)
    *    .where(Relation.column("id").isEqualTo(QueryBuilder.bindMarker("id"))
-   *
+   *   ...
    * }</pre>
    *
    * All mapped properties of the entity are included in the result set.

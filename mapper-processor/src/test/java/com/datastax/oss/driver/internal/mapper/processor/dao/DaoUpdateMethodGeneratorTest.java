@@ -29,43 +29,64 @@ import org.junit.runner.RunWith;
 public class DaoUpdateMethodGeneratorTest {
 
   @Test
-  @UseDataProvider("usingClauseProvider")
-  public void should_process_using_clause(String usingClause, String expected) {
+  @UseDataProvider("usingTimestampProvider")
+  public void should_process_timestamp(String timestamp, String expected) {
     // given
     DaoUpdateMethodGenerator daoUpdateMethodGenerator =
         new DaoUpdateMethodGenerator(null, null, null);
     MethodSpec.Builder builder = MethodSpec.constructorBuilder();
 
     // when
-    daoUpdateMethodGenerator.maybeAddUsingClause(builder, usingClause);
+    daoUpdateMethodGenerator.maybeAddTimestampClause(builder, timestamp);
+
+    // then
+    assertThat(builder.build().code).isEqualTo(CodeBlock.of(expected));
+  }
+
+  @Test
+  @UseDataProvider("usingTtlProvider")
+  public void should_process_ttl(String ttl, String expected) {
+    // given
+    DaoUpdateMethodGenerator daoUpdateMethodGenerator =
+        new DaoUpdateMethodGenerator(null, null, null);
+    MethodSpec.Builder builder = MethodSpec.constructorBuilder();
+
+    // when
+    daoUpdateMethodGenerator.maybeAddTtlClause(builder, ttl);
 
     // then
     assertThat(builder.build().code).isEqualTo(CodeBlock.of(expected));
   }
 
   @DataProvider
-  public static Object[][] usingClauseProvider() {
+  public static Object[][] usingTimestampProvider() {
     return new Object[][] {
-      {"USING TIMESTAMP 1", ".usingTimestamp(1))"},
+      {"1", ".usingTimestamp(1))"},
       {
-        "USING TIMESTAMP :ts",
+        ":ts",
         ".usingTimestamp(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"ts\")))"
       },
-      {"USING TTL 1", ".usingTtl(1))"},
+      {"1", ".usingTimestamp(1))"},
       {
-        "USING TTL :ttl",
+        ":TS",
+        ".usingTimestamp(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"TS\")))"
+      },
+    };
+  }
+
+  @DataProvider
+  public static Object[][] usingTtlProvider() {
+    return new Object[][] {
+      {"1", ".usingTtl(1))"},
+      {
+        ":ttl",
         ".usingTtl(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"ttl\")))"
       },
-      {"using timestamp 1", ".usingTimestamp(1))"},
+      {"1", ".usingTtl(1))"},
       {
-        "using timestamp :ts",
-        ".usingTimestamp(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"ts\")))"
+        ":TTL",
+        ".usingTtl(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"TTL\")))"
       },
-      {"using ttl 1", ".usingTtl(1))"},
-      {
-        "using ttl :ttl",
-        ".usingTtl(com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker(\"ttl\")))"
-      }
     };
   }
 }

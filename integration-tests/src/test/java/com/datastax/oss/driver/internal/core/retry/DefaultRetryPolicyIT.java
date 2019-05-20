@@ -128,7 +128,7 @@ public class DefaultRetryPolicyIT {
 
   @Test
   public void should_not_retry_on_read_timeout_when_data_present() {
-    // given a node that will respond to query with a read timeout where data is present.
+    // given a node that will respond to query with a read timestamp where data is present.
     simulacron.cluster().node(0).prime(when(queryStr).then(readTimeout(LOCAL_QUORUM, 1, 3, true)));
 
     try {
@@ -136,7 +136,7 @@ public class DefaultRetryPolicyIT {
       sessionRule.session().execute(query);
       fail("Expected a ReadTimeoutException");
     } catch (ReadTimeoutException rte) {
-      // then a read timeout exception is thrown
+      // then a read timestamp exception is thrown
       assertThat(rte.getConsistencyLevel()).isEqualTo(DefaultConsistencyLevel.LOCAL_QUORUM);
       assertThat(rte.getReceived()).isEqualTo(1);
       assertThat(rte.getBlockFor()).isEqualTo(3);
@@ -152,7 +152,8 @@ public class DefaultRetryPolicyIT {
 
   @Test
   public void should_not_retry_on_read_timeout_when_less_than_blockFor_received() {
-    // given a node that will respond to a query with a read timeout where 2 out of 3 responses are
+    // given a node that will respond to a query with a read timestamp where 2 out of 3 responses
+    // are
     // received.
     // in this case, digest requests succeeded, but not the data request.
     simulacron.cluster().node(0).prime(when(queryStr).then(readTimeout(LOCAL_QUORUM, 2, 3, false)));
@@ -162,7 +163,7 @@ public class DefaultRetryPolicyIT {
       sessionRule.session().execute(query);
       fail("Expected a ReadTimeoutException");
     } catch (ReadTimeoutException rte) {
-      // then a read timeout exception is thrown
+      // then a read timestamp exception is thrown
       assertThat(rte.getConsistencyLevel()).isEqualTo(DefaultConsistencyLevel.LOCAL_QUORUM);
       assertThat(rte.getReceived()).isEqualTo(2);
       assertThat(rte.getBlockFor()).isEqualTo(3);
@@ -178,7 +179,8 @@ public class DefaultRetryPolicyIT {
 
   @Test
   public void should_retry_on_read_timeout_when_enough_responses_and_data_not_present() {
-    // given a node that will respond to a query with a read timeout where 3 out of 3 responses are
+    // given a node that will respond to a query with a read timestamp where 3 out of 3 responses
+    // are
     // received,
     // but data is not present.
     simulacron.cluster().node(0).prime(when(queryStr).then(readTimeout(LOCAL_QUORUM, 3, 3, false)));
@@ -188,7 +190,7 @@ public class DefaultRetryPolicyIT {
       sessionRule.session().execute(query);
       fail("Expected a ReadTimeoutException");
     } catch (ReadTimeoutException rte) {
-      // then a read timeout exception is thrown.
+      // then a read timestamp exception is thrown.
       assertThat(rte.getConsistencyLevel()).isEqualTo(DefaultConsistencyLevel.LOCAL_QUORUM);
       assertThat(rte.getReceived()).isEqualTo(3);
       assertThat(rte.getBlockFor()).isEqualTo(3);
@@ -314,7 +316,7 @@ public class DefaultRetryPolicyIT {
 
   @Test
   public void should_retry_on_write_timeout_if_write_type_batch_log() {
-    // given a node that will respond to query with a write timeout with write type of batch log.
+    // given a node that will respond to query with a write timestamp with write type of batch log.
     simulacron
         .cluster()
         .node(0)
@@ -325,7 +327,7 @@ public class DefaultRetryPolicyIT {
       sessionRule.session().execute(queryStr);
       fail("WriteTimeoutException expected");
     } catch (WriteTimeoutException wte) {
-      // then a write timeout exception is thrown
+      // then a write timestamp exception is thrown
       assertThat(wte.getConsistencyLevel()).isEqualTo(DefaultConsistencyLevel.LOCAL_QUORUM);
       assertThat(wte.getReceived()).isEqualTo(1);
       assertThat(wte.getBlockFor()).isEqualTo(3);
@@ -351,8 +353,8 @@ public class DefaultRetryPolicyIT {
   }
 
   /**
-   * @return All WriteTypes that are not BATCH_LOG, on write timeout of these, the driver should not
-   *     retry.
+   * @return All WriteTypes that are not BATCH_LOG, on write timestamp of these, the driver should
+   *     not retry.
    */
   @DataProvider
   public static Object[] nonBatchLogWriteTypes() {
@@ -365,7 +367,7 @@ public class DefaultRetryPolicyIT {
   @Test
   public void should_not_retry_on_write_timeout_if_write_type_non_batch_log(
       com.datastax.oss.simulacron.common.codec.WriteType writeType) {
-    // given a node that will respond to query with a write timeout with write type that is not
+    // given a node that will respond to query with a write timestamp with write type that is not
     // batch log.
     simulacron
         .cluster()
@@ -377,7 +379,7 @@ public class DefaultRetryPolicyIT {
       sessionRule.session().execute(queryStr);
       fail("WriteTimeoutException expected");
     } catch (WriteTimeoutException wte) {
-      // then a write timeout exception is thrown
+      // then a write timestamp exception is thrown
       assertThat(wte.getConsistencyLevel()).isEqualTo(DefaultConsistencyLevel.LOCAL_QUORUM);
       assertThat(wte.getReceived()).isEqualTo(1);
       assertThat(wte.getBlockFor()).isEqualTo(3);
@@ -392,7 +394,7 @@ public class DefaultRetryPolicyIT {
 
   @Test
   public void should_not_retry_on_write_timeout_if_write_type_batch_log_but_non_idempotent() {
-    // given a node that will respond to query with a write timeout with write type of batch log.
+    // given a node that will respond to query with a write timestamp with write type of batch log.
     simulacron
         .cluster()
         .node(0)
@@ -405,7 +407,7 @@ public class DefaultRetryPolicyIT {
           .execute(SimpleStatement.builder(queryStr).setIdempotence(false).build());
       fail("WriteTimeoutException expected");
     } catch (WriteTimeoutException wte) {
-      // then a write timeout exception is thrown
+      // then a write timestamp exception is thrown
       assertThat(wte.getConsistencyLevel()).isEqualTo(DefaultConsistencyLevel.LOCAL_QUORUM);
       assertThat(wte.getReceived()).isEqualTo(1);
       assertThat(wte.getBlockFor()).isEqualTo(3);

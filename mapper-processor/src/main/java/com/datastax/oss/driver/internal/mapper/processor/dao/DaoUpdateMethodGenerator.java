@@ -37,8 +37,6 @@ import com.squareup.javapoet.MethodSpec;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -48,13 +46,6 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
   private static final EnumSet<ReturnTypeKind> SUPPORTED_RETURN_TYPES =
       EnumSet.of(
           VOID, FUTURE_OF_VOID, RESULT_SET, FUTURE_OF_ASYNC_RESULT_SET, BOOLEAN, FUTURE_OF_BOOLEAN);
-  private static final Pattern USING_TIMESTAMP_VALUE_PATTER =
-      Pattern.compile("(?i)USING TIMESTAMP (\\d+$)");
-  private static final Pattern USING_TIMESTAMP_BIND_MARKER_PATTERN =
-      Pattern.compile("(?i)USING TIMESTAMP :(\\w+$)");
-  private static final Pattern USING_TTL_VALUE_PATTER = Pattern.compile("(?i)USING TTL (\\d+)$");
-  private static final Pattern USING_TTL_BIND_MARKER_PATTERN =
-      Pattern.compile("(?i)USING TTL :(\\w+)$");
 
   public DaoUpdateMethodGenerator(
       ExecutableElement methodElement,
@@ -158,7 +149,12 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
         DefaultUpdate.class);
     Update annotation = methodElement.getAnnotation(Update.class);
 
-    maybeAddUsingClause(methodBuilder, annotation.customUsingClause());
+    if (annotation.timestamp().isEmpty() && annotation.ttl().isEmpty()) {
+      methodBuilder.addCode(")");
+    } else {
+      maybeAddTimestampClause(methodBuilder, annotation.timestamp());
+      maybeAddTtlClause(methodBuilder, annotation.ttl());
+    }
 
     maybeAddIfClause(methodBuilder, annotation);
 
@@ -166,45 +162,49 @@ public class DaoUpdateMethodGenerator extends DaoMethodGenerator {
   }
 
   @VisibleForTesting
-  void maybeAddUsingClause(MethodSpec.Builder methodBuilder, String customUsingClause) {
-    if (customUsingClause.isEmpty()) {
-      methodBuilder.addCode(")");
-      return;
+  void maybeAddTimestampClause(MethodSpec.Builder methodBuilder, String timestamp) {
+    if (!timestamp.isEmpty()) {
+      if (timestamp.startsWith(":")) {
+        methodBuilder.addCode(
+            ".usingTimestamp($1T.bindMarker($2S)))", QueryBuilder.class, timestamp.substring(1));
+      } else {
+        try {
+          long timestampInt = Long.parseLong(timestamp);
+          methodBuilder.addCode(".usingTimestamp($L))", timestampInt);
+        } catch (NumberFormatException ex) {
+          context
+              .getMessager()
+              .error(
+                  methodElement,
+                  "timestamp: %s on the: %s method is incorrect.",
+                  timestamp,
+                  Update.class.getSimpleName());
+        }
+      }
     }
-    Matcher usingTimestampBindMakerMatcher =
-        USING_TIMESTAMP_BIND_MARKER_PATTERN.matcher(customUsingClause);
-    if (usingTimestampBindMakerMatcher.matches()) {
-      methodBuilder.addCode(
-          ".usingTimestamp($1T.bindMarker($2S)))",
-          QueryBuilder.class,
-          usingTimestampBindMakerMatcher.group(1));
-      return;
-    }
-    Matcher usingTimestampValueMatcher = USING_TIMESTAMP_VALUE_PATTER.matcher(customUsingClause);
-    if (usingTimestampValueMatcher.matches()) {
-      methodBuilder.addCode(".usingTimestamp($L))", usingTimestampValueMatcher.group(1));
-      return;
-    }
-    Matcher usingTtlBindMakerMatcher = USING_TTL_BIND_MARKER_PATTERN.matcher(customUsingClause);
-    if (usingTtlBindMakerMatcher.matches()) {
-      methodBuilder.addCode(
-          ".usingTtl($1T.bindMarker($2S)))", QueryBuilder.class, usingTtlBindMakerMatcher.group(1));
-      return;
-    }
-    Matcher usingTtlValueMatcher = USING_TTL_VALUE_PATTER.matcher(customUsingClause);
-    if (usingTtlValueMatcher.matches()) {
-      methodBuilder.addCode(".usingTtl($L))", usingTtlValueMatcher.group(1));
-      return;
-    }
+  }
 
-    // no match - it means that using clause was incorrect
-    context
-        .getMessager()
-        .error(
-            methodElement,
-            "customUsingClause: %s on the: %s method is incorrect.",
-            customUsingClause,
-            Update.class.getSimpleName());
+  @VisibleForTesting
+  void maybeAddTtlClause(MethodSpec.Builder methodBuilder, String ttl) {
+    if (!ttl.isEmpty()) {
+      if (ttl.startsWith(":")) {
+        methodBuilder.addCode(
+            ".usingTtl($1T.bindMarker($2S)))", QueryBuilder.class, ttl.substring(1));
+      } else {
+        try {
+          int ttlLong = Integer.parseInt(ttl);
+          methodBuilder.addCode(".usingTtl($L))", ttlLong);
+        } catch (NumberFormatException ex) {
+          context
+              .getMessager()
+              .error(
+                  methodElement,
+                  "ttl: %s on the: %s method is incorrect.",
+                  ttl,
+                  Update.class.getSimpleName());
+        }
+      }
+    }
   }
 
   private void maybeAddIfClause(MethodSpec.Builder methodBuilder, Update annotation) {

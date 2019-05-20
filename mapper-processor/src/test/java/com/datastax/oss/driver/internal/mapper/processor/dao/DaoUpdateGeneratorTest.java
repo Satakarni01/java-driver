@@ -31,7 +31,7 @@ import org.junit.runner.RunWith;
 public class DaoUpdateGeneratorTest extends DaoMethodGeneratorTest {
 
   private static final AnnotationSpec UPDATE_ANNOTATION_WITH_WHERE_CLAUSE =
-      AnnotationSpec.builder(Update.class).addMember("whereClause", "$S", "id = :id").build();
+      AnnotationSpec.builder(Update.class).build();
 
   @Test
   @Override
@@ -73,7 +73,6 @@ public class DaoUpdateGeneratorTest extends DaoMethodGeneratorTest {
             .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
             .addAnnotation(
                 AnnotationSpec.builder(Update.class)
-                    .addMember("whereClause", "$S", "id = :id")
                     .addMember("ifExists", "true")
                     .addMember("customIfClause", "$S", "1 = 1")
                     .build())
@@ -82,14 +81,14 @@ public class DaoUpdateGeneratorTest extends DaoMethodGeneratorTest {
             .build(),
       },
       {
-        "customUsingClause: USING tt a on the: Update method is incorrect.",
+        "ttl: %34 on the: Update method is incorrect",
         MethodSpec.methodBuilder("update")
             .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
             .addAnnotation(
                 AnnotationSpec.builder(Update.class)
                     .addMember("whereClause", "$S", "id = :id")
                     .addMember("ifExists", "true")
-                    .addMember("customUsingClause", "$S", "USING tt a")
+                    .addMember("ttl", "$S", "%34")
                     .build())
             .addParameter(ParameterSpec.builder(ENTITY_CLASS_NAME, "entity").build())
             .returns(TypeName.VOID)

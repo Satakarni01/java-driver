@@ -44,12 +44,17 @@ import java.util.concurrent.CompletionStage;
  *
  * The first parameter must be the entity to update.
  *
- * <p>If the query has a {@linkplain #customUsingClause()} custom clause} with placeholders, the
+ * <p>If the query has a {@linkplain #ttl()} or {@linkplain #timestamp()} with placeholders, the
  * method must have corresponding additional parameters (same name, and a compatible Java type):
  *
  * <pre>
- * &#64;Update(customUsingClause = "USING TTL :ttl")
+ * &#64;Update(ttl = ":ttl")
  * void updateWithTtl(Product product, int ttl);
+ * </pre>
+ *
+ * <pre>
+ * &#64;Update(timestamp = ":timestamp")
+ * void updateWithTimestamp(Product product, int timestamp);
  * </pre>
  *
  * <h3>Return type</h3>
@@ -124,14 +129,27 @@ public @interface Update {
   String customIfClause() default "";
 
   /**
-   * A custom USING clause for the UPDATE query.
+   * A custom ttl that will be appended to the query via USING TTL
    *
-   * <p>The default mapper code generates a query of the form {@code UPDATE table (...) USING (TTL |
-   * TIMESTAMP)}. If this element is a non empty string, it gets appended. Therefore it can be used
-   * to add a {@code USING TTL} or {@code USING TIMESTAMP} clause.
+   * <p>It can contain literal value {@code ttl = "1"} or placeholder {@code ttl = ":marker"}
+   *
+   * <p>If this is not empty, it gets appended in the generated query.</>
    *
    * <p>This clause can contain placeholders that will be bound with the method's parameters; see
    * the top-level javadocs of this class for more explanations.
    */
-  String customUsingClause() default "";
+  String ttl() default "";
+
+  /**
+   * A custom timestamp that will be appended to the query via USING TTL
+   *
+   * <p>It can contain literal value {@code timestamp = "1"} or placeholder {@code timestamp =
+   * ":marker"}
+   *
+   * <p>If this is not empty, it gets appended in the generated query.</>
+   *
+   * <p>This clause can contain placeholders that will be bound with the method's parameters; see
+   * the top-level javadocs of this class for more explanations.
+   */
+  String timestamp() default "";
 }

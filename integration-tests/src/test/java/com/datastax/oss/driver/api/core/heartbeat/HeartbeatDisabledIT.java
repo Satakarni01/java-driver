@@ -37,7 +37,7 @@ public class HeartbeatDisabledIT {
 
   @Test
   public void should_not_send_heartbeat_when_disabled() throws InterruptedException {
-    // Disable heartbeats entirely, wait longer than the default timeout and make sure we didn't
+    // Disable heartbeats entirely, wait longer than the default timestamp and make sure we didn't
     // receive any
     DriverConfigLoader loader =
         SessionUtils.configLoaderBuilder()

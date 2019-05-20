@@ -101,7 +101,7 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity_with_custom_clause() {
+  public void should_insert_entity_with_timestamp() {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     long timestamp = 1234;
@@ -120,7 +120,60 @@ public class UpdateEntityIT extends InventoryITBase {
   }
 
   @Test
-  public void should_insert_entity_with_custom_clause_asynchronously() {
+  public void should_insert_entity_with_timestamp_literal() {
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
+
+    dao.updateWithBoundTimestampLiteral(FLAMETHROWER);
+
+    CqlSession session = sessionRule.session();
+    Row row =
+        session
+            .execute(
+                SimpleStatement.newInstance(
+                    "SELECT WRITETIME(description) FROM product WHERE id = ?",
+                    FLAMETHROWER.getId()))
+            .one();
+    long writeTime = row.getLong(0);
+    assertThat(writeTime).isEqualTo(1000L);
+  }
+
+  @Test
+  public void should_insert_entity_with_ttl() {
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
+
+    int ttl = 100_000;
+    dao.updateWithBoundTtl(FLAMETHROWER, ttl);
+
+    CqlSession session = sessionRule.session();
+    Row row =
+        session
+            .execute(
+                SimpleStatement.newInstance(
+                    "SELECT TTL(description) FROM product WHERE id = ?", FLAMETHROWER.getId()))
+            .one();
+    int writeTime = row.getInt(0);
+    assertThat(writeTime).isEqualTo(ttl);
+  }
+
+  @Test
+  public void should_insert_entity_with_ttl_literal() {
+    assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
+
+    dao.updateWithBoundTtlLiteral(FLAMETHROWER);
+
+    CqlSession session = sessionRule.session();
+    Row row =
+        session
+            .execute(
+                SimpleStatement.newInstance(
+                    "SELECT TTL(description) FROM product WHERE id = ?", FLAMETHROWER.getId()))
+            .one();
+    int writeTime = row.getInt(0);
+    assertThat(writeTime).isEqualTo(1000);
+  }
+
+  @Test
+  public void should_insert_entity_with_timestamp_asynchronously() {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
 
     long timestamp = 1234;
@@ -291,8 +344,17 @@ public class UpdateEntityIT extends InventoryITBase {
     @Update
     void update(Product product);
 
-    @Update(customUsingClause = "USING TIMESTAMP :timestamp")
+    @Update(timestamp = ":timestamp")
     void updateWithBoundTimestamp(Product product, long timestamp);
+
+    @Update(timestamp = "1000")
+    void updateWithBoundTimestampLiteral(Product product);
+
+    @Update(ttl = ":ttl")
+    void updateWithBoundTtl(Product product, int ttl);
+
+    @Update(ttl = "1000")
+    void updateWithBoundTtlLiteral(Product product);
 
     @Update(ifExists = true)
     ResultSet updateIfExists(Product product);
@@ -306,7 +368,7 @@ public class UpdateEntityIT extends InventoryITBase {
     @Update(customIfClause = "IF dimensions.length = :length")
     CompletableFuture<AsyncResultSet> updateIfLengthAsync(Product product, int length);
 
-    @Update(customUsingClause = "USING TIMESTAMP :timestamp")
+    @Update(timestamp = ":timestamp")
     CompletableFuture<Void> updateAsyncWithBoundTimestamp(Product product, long timestamp);
 
     @Update(ifExists = true)

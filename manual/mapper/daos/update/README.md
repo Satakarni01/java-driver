@@ -14,11 +14,14 @@ public interface ProductDao {
 
 The first parameter must be the entity to update.
 
-If the query has a custom clause with placeholders, the method must have corresponding additional
+If the query has a custom timestamp or ttl with placeholders, the method must have corresponding additional
 parameters (same name, and a compatible Java type):
 
 ```java
-@Update(customUsingClause = "USING TTL :ttl")
+@Update(timestamp = ":timestamp")
+void updateWithTimestamp(Product product, int timestamp);
+
+@Update(ttl = ":ttl")
 void updateWithTtl(Product product, int ttl);
 ```
 

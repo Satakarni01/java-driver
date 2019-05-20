@@ -54,7 +54,7 @@ public class DriverExecutionProfileReloadIT {
             () ->
                 ConfigFactory.parseString(
                         "basic.config-reload-interval = 2s\n"
-                            + "basic.request.timeout = 2s\n"
+                            + "basic.request.timestamp = 2s\n"
                             + configSource.get())
                     .withFallback(DEFAULT_CONFIG_SUPPLIER.get()));
     try (CqlSession session =
@@ -65,7 +65,7 @@ public class DriverExecutionProfileReloadIT {
                 .build()) {
       simulacron.cluster().prime(when(query).then(noRows()).delay(4, TimeUnit.SECONDS));
 
-      // Expect timeout since default session timeout is 2s
+      // Expect timestamp since default session timestamp is 2s
       try {
         session.execute(query);
         fail("DriverTimeoutException expected");
@@ -73,11 +73,11 @@ public class DriverExecutionProfileReloadIT {
         // expected.
       }
 
-      // Bump up request timeout to 10 seconds and wait for config to reload.
-      configSource.set("basic.request.timeout = 10s");
+      // Bump up request timestamp to 10 seconds and wait for config to reload.
+      configSource.set("basic.request.timestamp = 10s");
       waitForConfigChange(session, 3, TimeUnit.SECONDS);
 
-      // Execute again, should not timeout.
+      // Execute again, should not timestamp.
       session.execute(query);
     }
   }
@@ -92,7 +92,7 @@ public class DriverExecutionProfileReloadIT {
             () ->
                 ConfigFactory.parseString(
                         "basic.config-reload-interval = 0\n"
-                            + "basic.request.timeout = 2s\n"
+                            + "basic.request.timestamp = 2s\n"
                             + configSource.get())
                     .withFallback(DEFAULT_CONFIG_SUPPLIER.get()));
     try (CqlSession session =
@@ -103,7 +103,7 @@ public class DriverExecutionProfileReloadIT {
                 .build()) {
       simulacron.cluster().prime(when(query).then(noRows()).delay(4, TimeUnit.SECONDS));
 
-      // Expect timeout since default session timeout is 2s
+      // Expect timestamp since default session timestamp is 2s
       try {
         session.execute(query);
         fail("DriverTimeoutException expected");
@@ -111,12 +111,12 @@ public class DriverExecutionProfileReloadIT {
         // expected.
       }
 
-      // Bump up request timeout to 10 seconds and trigger a manual reload.
-      configSource.set("basic.request.timeout = 10s");
+      // Bump up request timestamp to 10 seconds and trigger a manual reload.
+      configSource.set("basic.request.timestamp = 10s");
       session.getContext().getConfigLoader().reload();
       waitForConfigChange(session, 500, TimeUnit.MILLISECONDS);
 
-      // Execute again, should not timeout.
+      // Execute again, should not timestamp.
       session.execute(query);
     }
   }
@@ -148,8 +148,8 @@ public class DriverExecutionProfileReloadIT {
         // expected.
       }
 
-      // Bump up request timeout to 10 seconds on profile and wait for config to reload.
-      configSource.set("profiles.slow.basic.request.timeout = 10s");
+      // Bump up request timestamp to 10 seconds on profile and wait for config to reload.
+      configSource.set("profiles.slow.basic.request.timestamp = 10s");
       waitForConfigChange(session, 3, TimeUnit.SECONDS);
 
       // Execute again, should expect to fail again because doesn't allow to dynamically define
@@ -171,7 +171,7 @@ public class DriverExecutionProfileReloadIT {
                 ConfigFactory.parseString(
                         "profiles.slow.basic.request.consistency = ONE\n"
                             + "basic.config-reload-interval = 2s\n"
-                            + "basic.request.timeout = 2s\n"
+                            + "basic.request.timestamp = 2s\n"
                             + configSource.get())
                     .withFallback(DEFAULT_CONFIG_SUPPLIER.get()));
     try (CqlSession session =
@@ -190,11 +190,11 @@ public class DriverExecutionProfileReloadIT {
         // expected.
       }
 
-      // Bump up request timeout to 10 seconds on profile and wait for config to reload.
-      configSource.set("profiles.slow.basic.request.timeout = 10s");
+      // Bump up request timestamp to 10 seconds on profile and wait for config to reload.
+      configSource.set("profiles.slow.basic.request.timestamp = 10s");
       waitForConfigChange(session, 3, TimeUnit.SECONDS);
 
-      // Execute again, should succeed because profile timeout was increased.
+      // Execute again, should succeed because profile timestamp was increased.
       session.execute(SimpleStatement.builder(query).setExecutionProfileName("slow").build());
     }
   }

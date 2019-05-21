@@ -15,8 +15,12 @@
  */
 package com.datastax.oss.driver.internal.mapper.processor.dao;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import com.datastax.oss.driver.api.mapper.annotations.Update;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.squareup.javapoet.AnnotationSpec;
+import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
@@ -79,6 +83,64 @@ public class DaoUpdateGeneratorTest extends DaoMethodGeneratorTest {
             .addParameter(ParameterSpec.builder(ENTITY_CLASS_NAME, "entity").build())
             .returns(TypeName.VOID)
             .build(),
+      },
+    };
+  }
+
+  @Test
+  @UseDataProvider("usingTimestampProvider")
+  public void should_process_timestamp(String timestamp, CodeBlock expected) {
+    // given
+    DaoUpdateMethodGenerator daoUpdateMethodGenerator =
+        new DaoUpdateMethodGenerator(null, null, null);
+    MethodSpec.Builder builder = MethodSpec.constructorBuilder();
+
+    // when
+    daoUpdateMethodGenerator.maybeAddTimestamp(timestamp, builder);
+
+    // then
+    assertThat(builder.build().code).isEqualTo(expected);
+  }
+
+  @Test
+  @UseDataProvider("usingTtlProvider")
+  public void should_process_ttl(String ttl, CodeBlock expected) {
+    // given
+    DaoUpdateMethodGenerator daoUpdateMethodGenerator =
+        new DaoUpdateMethodGenerator(null, null, null);
+    MethodSpec.Builder builder = MethodSpec.constructorBuilder();
+
+    // when
+    daoUpdateMethodGenerator.maybeAddTtl(ttl, builder);
+
+    // then
+    assertThat(builder.build().code).isEqualTo(expected);
+  }
+
+  @DataProvider
+  public static Object[][] usingTimestampProvider() {
+    return new Object[][] {
+      {"1", CodeBlock.of(".usingTimestamp(1)")},
+      {
+        ":ts", CodeBlock.of(".usingTimestamp($T.bindMarker($S))", QueryBuilder.class, "ts"),
+      },
+      {"1", CodeBlock.of(".usingTimestamp(1)")},
+      {
+        ":TS", CodeBlock.of(".usingTimestamp($T.bindMarker($S))", QueryBuilder.class, "TS"),
+      },
+    };
+  }
+
+  @DataProvider
+  public static Object[][] usingTtlProvider() {
+    return new Object[][] {
+      {"1", CodeBlock.of(".usingTtl(1)")},
+      {
+        ":ttl", CodeBlock.of(".usingTtl($T.bindMarker($S))", QueryBuilder.class, "ttl"),
+      },
+      {"1", CodeBlock.of(".usingTtl(1)")},
+      {
+        ":TTL", CodeBlock.of(".usingTtl($T.bindMarker($S))", QueryBuilder.class, "TTL"),
       },
     };
   }

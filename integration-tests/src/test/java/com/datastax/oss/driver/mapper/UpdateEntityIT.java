@@ -429,8 +429,8 @@ public class UpdateEntityIT extends InventoryITBase {
     @Update(customWhereClause = "id = :id")
     void updateWhereId(Product product, UUID id);
 
-    @Update(customWhereClause = "id IN (:id, :id2)")
-    void updateWhereIdIn(Product product, UUID id, UUID id2);
+    @Update(customWhereClause = "id IN (:id1, :id2)")
+    void updateWhereIdIn(Product product, UUID id1, UUID id2);
 
     @Update(timestamp = ":timestamp")
     void updateWithBoundTimestamp(Product product, long timestamp);

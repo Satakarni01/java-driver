@@ -949,7 +949,7 @@ public class CachingCodecRegistryTest {
 
     @Override
     protected TypeCodec<?> getCachedCodec(
-        @Nullable DataType cqlType, @Nullable GenericType<?> javaType, boolean isJavaCovariant) {
+        DataType cqlType, GenericType<?> javaType, boolean isJavaCovariant) {
       cache.lookup(cqlType, javaType, isJavaCovariant);
       return createCodec(cqlType, javaType, isJavaCovariant);
     }

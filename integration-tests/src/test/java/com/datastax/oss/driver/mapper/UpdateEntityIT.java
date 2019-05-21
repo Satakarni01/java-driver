@@ -373,6 +373,41 @@ public class UpdateEntityIT extends InventoryITBase {
     assertThat(dao.findById(FLAMETHROWER.getId())).isNull();
   }
 
+  @Test
+  public void should_update_entity_without_pk_placeholders_matching_custom_where_in_clause() {
+    // given
+    ProductWithoutIdDao dao = inventoryMapper.productWithoutIdDao(sessionRule.keyspace());
+    UUID idOne = UUID.randomUUID();
+    UUID idTwo = UUID.randomUUID();
+    sessionRule
+        .session()
+        .execute(
+            SimpleStatement.newInstance(
+                "INSERT INTO productwithoutid (id, clustering, description) VALUES (?,?,?)",
+                idOne,
+                1,
+                "a"));
+    sessionRule
+        .session()
+        .execute(
+            SimpleStatement.newInstance(
+                "INSERT INTO productwithoutid (id, clustering, description) VALUES (?,?,?)",
+                idTwo,
+                1,
+                "b"));
+
+    assertThat(dao.findById(idOne).getDescription()).isEqualTo("a");
+    assertThat(dao.findById(idTwo).getDescription()).isEqualTo("b");
+
+    // when
+    ProductWithoutId afterUpdate = new ProductWithoutId("c");
+    dao.updateWhereIdInSetWithoutPKPlaceholders(afterUpdate, idOne, idTwo);
+
+    // then
+    assertThat(dao.findById(idOne).getDescription()).isEqualTo(afterUpdate.getDescription());
+    assertThat(dao.findById(idTwo).getDescription()).isEqualTo(afterUpdate.getDescription());
+  }
+
   @Mapper
   public interface InventoryMapper {
     @DaoFactory
@@ -380,6 +415,9 @@ public class UpdateEntityIT extends InventoryITBase {
 
     @DaoFactory
     OnlyPKDao onlyPkDao(@DaoKeyspace CqlIdentifier keyspace);
+
+    @DaoFactory
+    ProductWithoutIdDao productWithoutIdDao(@DaoKeyspace CqlIdentifier keyspace);
   }
 
   @Dao
@@ -438,5 +476,14 @@ public class UpdateEntityIT extends InventoryITBase {
   public interface OnlyPKDao {
     @Update
     void update(OnlyPK onlyPK);
+  }
+
+  @Dao
+  public interface ProductWithoutIdDao {
+    @Update(customWhereClause = "id IN (:id, :id2) AND clustering = 1")
+    void updateWhereIdInSetWithoutPKPlaceholders(ProductWithoutId product, UUID id, UUID id2);
+
+    @Select(customWhereClause = "id = :productId")
+    ProductWithoutId findById(UUID productId);
   }
 }
